@@ -1,6 +1,11 @@
 // WebSocket connection (will be reconnected after auth)
 let ws;
 
+// Immediately check for authentication and redirect if necessary
+if (localStorage.getItem('token')) {
+  window.location.replace('dashboard.html');
+}
+
 const urlInput = document.getElementById('urlInput');
 const checkBtn = document.getElementById('checkBtn');
 const resultDiv = document.getElementById('result');
