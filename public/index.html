@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Website Checker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="navButtons" style="display:none; position:absolute; top:32px; right:48px; z-index:1000; text-align:right;">
+    <button id="ongoingBtn">Ongoing Monitor</button>
+    <button id="historyBtn">History</button>
+    <button id="signoutBtn">Sign Out</button>
+    <span id="userInfo" style="margin-left:10px; display:inline;">Signed in as <span id="usernameDisplay"></span></span>
+  </div>
+  <div class="auth-buttons">
+    <button id="showSigninBtn">Sign In</button>
+    <button id="showSignupBtn">Sign Up</button>
+  </div>
+  <div class="center-card">
+    <h1 class="main-title">Website Checker</h1>
+    <p class="subtitle">Check if the website is currently available and responding</p>
+    <input type="text" id="urlInput" placeholder="https://example.com">
+    <button id="checkBtn">Check Status</button>
+    <div id="result"></div>
+  </div>
+
+  <!-- Sign In Modal -->
+  <div id="signinModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeSignin">&times;</span>
+      <h2>Sign In</h2>
+      <input type="text" id="signinUsername" placeholder="Username">
+      <input type="password" id="signinPassword" placeholder="Password">
+      <button id="signinSubmit">Sign In</button>
+      <div id="signinError" class="error"></div>
+      <p>Don't have an account? <a href="#" id="showSignup">Sign Up</a></p>
+    </div>
+  </div>
+
+  <!-- Sign Up Modal -->
+  <div id="signupModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeSignup">&times;</span>
+      <h2>Sign Up</h2>
+      <input type="text" id="signupUsername" placeholder="Username">
+      <input type="email" id="signupEmail" placeholder="Email">
+      <input type="password" id="signupPassword" placeholder="Password">
+      <input type="password" id="signupConfirmPassword" placeholder="Confirm Password">
+      <button id="signupSubmit">Sign Up</button>
+      <p>Already have an account? <a href="#" id="showSignin">Sign In</a></p>
+      <div id="signupError" class="error"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html> 

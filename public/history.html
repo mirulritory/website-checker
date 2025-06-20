@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring History</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: #f7f7f7; }
+    .history-container { max-width: 700px; margin: 32px auto; }
+    .history-title { color: #0a0; text-align: center; font-size: 2.2em; font-weight: bold; margin-bottom: 0.2em; }
+    .history-desc { text-align: center; color: #444; margin-bottom: 1em; }
+    .website-list { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 12px; margin-bottom: 18px; max-height: 180px; overflow-y: auto; }
+    .website-list-item { padding: 8px 12px; cursor: pointer; border-radius: 4px; transition: background 0.2s; }
+    .website-list-item:hover, .website-list-item.selected { background: #e0ffe0; font-weight: bold; }
+    .details-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 18px 20px; margin-top: 12px; }
+    .details-title { color: #0a0; font-size: 1.3em; font-weight: bold; margin-bottom: 0.5em; }
+    .details-section { margin-bottom: 0.7em; }
+    .latency-list { background: #f8f8f8; border-radius: 6px; padding: 8px; max-height: 120px; overflow-y: auto; font-size: 0.98em; }
+    .latency-list li { margin-bottom: 2px; }
+    .back-btn {
+      background: #0a0;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 18px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin: 0;
+      display: inline-block;
+      position:absolute; top:32px; right:48px;
+    }
+    .back-btn:hover { background: #088008; }
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      background: #f8f8f8;
+      border-radius: 6px;
+      overflow: hidden;
+      font-size: 0.98em;
+    }
+    .log-table th, .log-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid #e0e0e0;
+      text-align: left;
+    }
+    .log-table th {
+      background: #e0ffe0;
+      color: #0a0;
+    }
+    .log-table tr:last-child td {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="history-container">
+    <button id="backHomeBtn" class="back-btn">Back to Home</button>
+    <div class="history-title">Monitoring History</div>
+    <div class="history-desc">Review the past monitoring results of your tracked websites. Click a website to see detailed stats.</div>
+    <div class="website-list" id="websiteList"></div>
+    <div id="detailsSection">
+      <canvas id="latencyChart" width="600" height="220" style="margin-top:20px;"></canvas>
+    </div>
+  </div>
+  <script src="history.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html> 

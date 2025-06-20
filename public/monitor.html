@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ongoing Monitors</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #monitorList {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .monitor-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+        }
+
+        .monitor-url {
+            flex: 1;
+            color: #333;
+            word-break: break-all;
+            padding-right: 16px;
+        }
+
+        .stop-btn {
+            background: #ff3333;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            white-space: nowrap;
+            transition: background-color 0.2s;
+            min-width: 130px;
+            text-align: center;
+        }
+
+        .stop-btn:hover {
+            background: #cc0000;
+        }
+
+        .no-monitors-message {
+            text-align: center;
+            color: #555;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="navButtons" style="position:absolute; top:32px; right:48px; z-index:1000; text-align:right;">
+        <button id="backHomeBtn">Back to Home</button>
+    </div>
+    <div class="container">
+        <h1 style="color: #00b518;">Ongoing Monitors</h1>
+        <p class="subtitle">View all websites currently being monitored. You can stop monitoring any website from the list</p>
+
+        <!-- Message for when no monitors are found -->
+        <div id="noMonitorsMessage" class="no-monitors-message" style="display: none;">
+            No monitors found.
+        </div>
+
+        <!-- List to display ongoing monitors -->
+        <ul id="monitorList"></ul>
+    </div>
+    <script src="monitor.js"></script>
+</body>
+
+</html>
