@@ -49,12 +49,13 @@ function renderDetails(url) {
   }
   // Calculate stats
   const totalChecks = logs.length;
-  const offlineCount = logs.filter(log => log.status !== 'up' && log.status !== 'ONLINE').length;
+  const isOnline = (status) => status === 'up' || status === 'ONLINE' || status === 'online';
+  const offlineCount = logs.filter(log => !isOnline(log.status)).length;
   let totalOfflineDuration = 0;
   let lastOffline = null;
   let highestLatency = Math.max(...logs.map(log => log.latency || 0));
   logs.forEach((log, i) => {
-    if (log.status !== 'up' && log.status !== 'ONLINE') {
+    if (!isOnline(log.status)) {
       if (!lastOffline) lastOffline = new Date(log.timestamp);
       totalOfflineDuration += 10; // Assume 10s interval for each offline
     } else {
@@ -82,8 +83,8 @@ function renderDetails(url) {
         <tbody>
           ${logs.slice(0, 20).map(log =>
             `<tr>
-              <td style="color:${log.status === 'up' || log.status === 'ONLINE' ? 'green' : 'red'};font-weight:bold;">
-                ${log.status === 'up' || log.status === 'ONLINE' ? 'ONLINE' : 'OFFLINE'}
+              <td style="color:${isOnline(log.status) ? 'green' : 'red'};font-weight:bold;">
+                ${isOnline(log.status) ? 'ONLINE' : 'OFFLINE'}
               </td>
               <td>${log.latency ?? '-'}</td>
               <td>${log.response_code ?? '-'}</td>
