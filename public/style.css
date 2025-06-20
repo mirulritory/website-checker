@@ -2,7 +2,7 @@ body {
   min-height: 100vh;
   margin: 0;
   font-family: 'Segoe UI', Arial, sans-serif;
-  background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1500&q=80') no-repeat center center fixed;
+  background: url('BG.png') no-repeat center center fixed;
   background-size: cover;
   font-size: 16px;
 }
@@ -320,4 +320,39 @@ body {
   width: 90%;
   max-width: 1200px;
   margin: 20px auto;
+}
+
+.chart-container {
+    margin-top: 30px;
+}
+
+/* Style for the dropdown on the history page */
+.chart-options {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+#timePeriod {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 16px;
+    background-color: white;
+    cursor: pointer;
+    color: #333;
+    min-width: 150px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#timePeriod:hover {
+    border-color: #aaa;
+}
+
+#timePeriod:focus {
+    outline: none;
+    border-color: #00b518;
+    box-shadow: 0 0 0 3px rgba(0, 181, 24, 0.2);
 } 

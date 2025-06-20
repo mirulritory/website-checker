@@ -1,168 +1,186 @@
-const websiteListDiv = document.getElementById('websiteList');
-const detailsSection = document.getElementById('detailsSection');
-const backHomeBtn = document.getElementById('backHomeBtn');
+document.addEventListener('DOMContentLoaded', () => {
+    const websiteListDiv = document.getElementById('websiteList');
+    const backHomeBtn = document.getElementById('backHomeBtn');
+    const timePeriodSelect = document.getElementById('timePeriod');
+    const chartContainer = document.querySelector('.chart-container');
+    const latencyChartCanvas = document.getElementById('latencyChart');
+    const detailsCard = document.getElementById('detailsCard');
 
-function isAuthenticated() {
-  return !!localStorage.getItem('token');
-}
+    let allLogs = [];
+    let uniqueUrls = [];
+    let currentUrl = null;
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleString();
-}
-
-function renderWebsiteList(urls, selectedUrl) {
-  websiteListDiv.innerHTML = '';
-  urls.forEach(url => {
-    const div = document.createElement('div');
-    div.className = 'website-list-item' + (url === selectedUrl ? ' selected' : '');
-    div.textContent = url;
-    div.onclick = () => renderDetails(url);
-    websiteListDiv.appendChild(div);
-  });
-}
-
-let allLogs = [];
-let uniqueUrls = [];
-
-async function fetchHistory() {
-  if (!isAuthenticated()) {
-    window.location.href = 'index.html';
-    return;
-  }
-  const res = await fetch('/api/history', {
-    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-  });
-  allLogs = await res.json();
-  // Get unique URLs
-  uniqueUrls = [...new Set(allLogs.map(log => log.url))];
-  renderWebsiteList(uniqueUrls, null);
-  detailsSection.innerHTML = '';
-}
-
-function renderDetails(url) {
-  renderWebsiteList(uniqueUrls, url);
-  const logs = allLogs.filter(log => log.url === url);
-  if (logs.length === 0) {
-    detailsSection.innerHTML = '';
-    return;
-  }
-  // Calculate stats
-  const totalChecks = logs.length;
-  const isOnline = (status) => status === 'up' || status === 'ONLINE' || status === 'online';
-  const offlineCount = logs.filter(log => !isOnline(log.status)).length;
-  let totalOfflineDuration = 0;
-  let lastOffline = null;
-  let highestLatency = Math.max(...logs.map(log => log.latency || 0));
-  logs.forEach((log, i) => {
-    if (!isOnline(log.status)) {
-      if (!lastOffline) lastOffline = new Date(log.timestamp);
-      totalOfflineDuration += 10; // Assume 10s interval for each offline
-    } else {
-      lastOffline = null;
+    function isAuthenticated() {
+        return !!localStorage.getItem('token');
     }
-  });
-  // Build details HTML with a table for logs
-  let html = `<div class="details-card">
-    <div class="details-title">${url}</div>
-    <div class="details-section"><b>Total Checks:</b> ${totalChecks}</div>
-    <div class="details-section"><b>Offline Count:</b> ${offlineCount}</div>
-    <div class="details-section"><b>Highest Latency:</b> ${highestLatency} ms</div>    <div class="details-section"><b>Latency:</b>
-    
-    <div class="details-section"><b>Recent Checks:</b>
-      <table class="log-table">
-        <thead>
-          <tr>
-            <th>Status</th>
-            <th>Latency (ms)</th>
-            <th>Response Code</th>
-            <th>IP</th>
-            <th>Checked At</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${logs.slice(0, 20).map(log =>
-            `<tr>
-              <td style="color:${isOnline(log.status) ? 'green' : 'red'};font-weight:bold;">
-                ${isOnline(log.status) ? 'ONLINE' : 'OFFLINE'}
-              </td>
-              <td>${log.latency ?? '-'}</td>
-              <td>${log.response_code ?? '-'}</td>
-              <td>${log.ip_address ?? '-'}</td>
-              <td>${formatDate(log.timestamp)}</td>
-            </tr>`
-          ).join('')}
-        </tbody>
-      </table>
-    </div>
-  </div>`;
-  detailsSection.innerHTML = html;
 
-  const chartLogs = logs.slice(0, 50);
-  if (chartLogs.length > 1) {
-    // Add the canvas if not present
-    if (!document.getElementById('latencyChart')) {
-      const canvas = document.createElement('canvas');
-      canvas.id = 'latencyChart';
-      canvas.width = 600;
-      canvas.height = 220;
-      canvas.style.marginTop = '20px';
-      detailsSection.appendChild(canvas);
+    function formatDate(dateStr) {
+        return new Date(dateStr).toLocaleString();
     }
-    renderLatencyChart(chartLogs);
-  }
-}
 
-function renderLatencyChart(logs) {
-  const ctx = document.getElementById('latencyChart').getContext('2d');
-  const labels = logs.map(log => {
-    const d = new Date(log.timestamp);
-    return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
-  });
-  const data = logs.map(log => log.latency ?? null);
+    function renderWebsiteList(urls, selectedUrl) {
+        websiteListDiv.innerHTML = '<h2>Monitored Sites</h2>';
+        urls.forEach(url => {
+            const div = document.createElement('div');
+            div.className = 'website-list-item' + (url === selectedUrl ? ' selected' : '');
+            div.textContent = url;
+            div.onclick = () => {
+                renderDetails(url);
+            };
+            websiteListDiv.appendChild(div);
+        });
+    }
 
-  // Destroy previous chart if exists
-  if (window.latencyChartInstance) {
-    window.latencyChartInstance.destroy();
-  }
-
-  window.latencyChartInstance = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels.reverse(),
-      datasets: [{
-        label: 'Latency (ms)',
-        data: data.reverse(),
-        borderColor: '#0a0',
-        backgroundColor: 'rgba(10,160,10,0.1)',
-        tension: 0.2,
-        pointRadius: 2,
-        fill: true
-      }]
-    },
-    options: {
-      scales: {
-        x: {
-          title: { display: true, text: 'Time' },
-          ticks: { maxTicksLimit: 10 }
-        },
-        y: {
-          title: { display: true, text: 'Latency (ms)' },
-          beginAtZero: true
+    async function fetchHistory() {
+        if (!isAuthenticated()) {
+            window.location.href = 'index.html';
+            return;
         }
-      }
+        try {
+            const res = await fetch('/api/history', {
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+            });
+            allLogs = await res.json();
+            uniqueUrls = [...new Set(allLogs.map(log => log.url))];
+            renderWebsiteList(uniqueUrls, null);
+            detailsCard.innerHTML = '<p>Select a website to see its history.</p>';
+            chartContainer.style.display = 'none';
+        } catch (error) {
+            console.error('Failed to fetch history:', error);
+            detailsCard.innerHTML = '<p>Could not load history data.</p>';
+        }
     }
-  });
-}
 
-if (backHomeBtn) {
-  backHomeBtn.onclick = () => {
-    window.location.href = 'dashboard.html';
-  };
-}
+    function renderDetails(url) {
+        currentUrl = url;
+        renderWebsiteList(uniqueUrls, url);
 
-if (!isAuthenticated()) {
-  window.location.href = 'index.html';
-} else {
-  fetchHistory();
-} 
+        const logs = allLogs.filter(log => log.url === currentUrl);
+        if (logs.length === 0) {
+            detailsCard.innerHTML = '<p>No history found for this website.</p>';
+            chartContainer.style.display = 'none';
+            return;
+        }
+
+        const isOnline = (status) => ['up', 'online', 'ONLINE'].includes(status);
+        const offlineCount = logs.filter(log => !isOnline(log.status)).length;
+        const highestLatency = Math.max(0, ...logs.map(log => log.latency));
+
+        const tableRows = logs.slice(0, 20).map(log => `
+            <tr>
+                <td style="color:${isOnline(log.status) ? 'green' : 'red'};font-weight:bold;">
+                    ${isOnline(log.status) ? 'ONLINE' : 'OFFLINE'}
+                </td>
+                <td>${log.latency ?? '-'}</td>
+                <td>${log.response_code ?? '-'}</td>
+                <td>${log.ip_address ?? '-'}</td>
+                <td>${formatDate(log.timestamp)}</td>
+            </tr>
+        `).join('');
+
+        detailsCard.innerHTML = `
+            <div class="details-card">
+                <div class="details-title">${currentUrl}</div>
+                <div class="details-section"><b>Total Checks:</b> ${logs.length}</div>
+                <div class="details-section"><b>Offline Count:</b> ${offlineCount}</div>
+                <div class="details-section"><b>Highest Latency:</b> ${highestLatency} ms</div>
+                <div class="details-section"><b>Recent Checks:</b>
+                    <table class="log-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th><th>Latency (ms)</th><th>Response Code</th><th>IP</th><th>Checked At</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+
+        if (logs.length > 1) {
+            chartContainer.style.display = 'block';
+            renderLatencyChart();
+        } else {
+            chartContainer.style.display = 'none';
+        }
+    }
+
+    function renderLatencyChart() {
+        if (!currentUrl) return;
+
+        const logs = allLogs.filter(log => log.url === currentUrl);
+        const view = timePeriodSelect.value;
+
+        let labels = [];
+        let data = [];
+
+        if (view === 'recent') {
+            const chartLogs = logs.slice(0, 50).reverse();
+            labels = chartLogs.map(log => new Date(log.timestamp).toLocaleTimeString());
+            data = chartLogs.map(log => log.latency ?? null);
+        } else { // Aggregate by day or month
+            const aggregated = {};
+            logs.forEach(log => {
+                const date = new Date(log.timestamp);
+                let key;
+                if (view === 'hour') {
+                    key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:00`;
+                } else if (view === 'day') {
+                    key = date.toISOString().split('T')[0];
+                } else {
+                    key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                }
+                if (!aggregated[key]) {
+                    aggregated[key] = { total: 0, count: 0 };
+                }
+                if (log.latency !== null) {
+                    aggregated[key].total += log.latency;
+                    aggregated[key].count++;
+                }
+            });
+
+            const sortedKeys = Object.keys(aggregated).sort();
+            labels = sortedKeys;
+            data = sortedKeys.map(key => {
+                const item = aggregated[key];
+                return item.count > 0 ? Math.round(item.total / item.count) : 0;
+            });
+        }
+
+        if (window.latencyChartInstance) {
+            window.latencyChartInstance.destroy();
+        }
+
+        window.latencyChartInstance = new Chart(latencyChartCanvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Average Latency (ms)',
+                    data: data,
+                    borderColor: '#0a0',
+                    backgroundColor: 'rgba(10,160,10,0.1)',
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Time' } },
+                    y: { title: { display: true, text: 'Latency (ms)' }, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    if (backHomeBtn) {
+        backHomeBtn.addEventListener('click', () => window.location.href = 'dashboard.html');
+    }
+
+    timePeriodSelect.addEventListener('change', renderLatencyChart);
+
+    if (!isAuthenticated()) {
+        window.location.href = 'index.html';
+    } else {
+        fetchHistory();
+    }
+}); 

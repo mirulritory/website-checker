@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Monitoring History</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { background: #f7f7f7; }
+    body { background: url('BG.png')no-repeat center center fixed}
     .history-container { max-width: 700px; margin: 32px auto; }
     .history-title { color: #0a0; text-align: center; font-size: 2.2em; font-weight: bold; margin-bottom: 0.2em; }
     .history-desc { text-align: center; color: #444; margin-bottom: 1em; }
@@ -56,16 +57,34 @@
   </style>
 </head>
 <body>
-  <div class="history-container">
-    <button id="backHomeBtn" class="back-btn">Back to Home</button>
-    <div class="history-title">Monitoring History</div>
-    <div class="history-desc">Review the past monitoring results of your tracked websites. Click a website to see detailed stats.</div>
-    <div class="website-list" id="websiteList"></div>
-    <div id="detailsSection">
-      <canvas id="latencyChart" width="600" height="220" style="margin-top:20px;"></canvas>
+  <div id="navButtons" style="position:absolute; top:32px; right:48px; z-index:1000; text-align:right;">
+    <button id="backHomeBtn">Back to Home</button>
+  </div>
+  <div class="container monitor-container">
+    <h1 style="color:#00b518;">Monitoring History</h1>
+    <div class="history-layout">
+      <div id="websiteList" class="website-list-panel">
+        <!-- Website list will be rendered here -->
+      </div>
+      <div id="detailsSection" class="details-panel">
+        <div id="detailsCard">
+          <!-- Details card will be rendered here -->
+        </div>
+        <div class="chart-container" style="display: none;">
+          <div class="chart-options">
+            <label for="timePeriod">View by:</label>
+            <select id="timePeriod">
+              <option value="recent">Recent Checks</option>
+              <option value="hour">By Hour</option>
+              <option value="day">By Day</option>
+              <option value="month">By Month</option>
+            </select>
+          </div>
+          <canvas id="latencyChart" width="600" height="220" style="margin-top:20px;"></canvas>
+        </div>
+      </div>
     </div>
   </div>
   <script src="history.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html> 
