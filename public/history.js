@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderWebsiteList(urls, selectedUrl) {
-        websiteListDiv.innerHTML = '<h2>Monitored Sites</h2>';
+        websiteListDiv.innerHTML = '<p class="subtitle">This is a list of history of your monitored websites. Select a website to see the details.</p>';
         urls.forEach(url => {
             const div = document.createElement('div');
             div.className = 'website-list-item' + (url === selectedUrl ? ' selected' : '');
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             allLogs = await res.json();
             uniqueUrls = [...new Set(allLogs.map(log => log.url))];
             renderWebsiteList(uniqueUrls, null);
-            detailsCard.innerHTML = '<p>Select a website to see its history.</p>';
+            //detailsCard.innerHTML = '<p>Select a website to see its history.</p>';
             chartContainer.style.display = 'none';
         } catch (error) {
             console.error('Failed to fetch history:', error);

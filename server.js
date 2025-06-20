@@ -41,6 +41,9 @@ function getUserFromToken(req) {
 // Map to store active monitoring agents, keyed by user_id and then url
 const activeAgents = new Map();
 
+// Map to store the last known status of each monitor, to detect changes
+const lastStatusMap = new Map();
+
 // Function to start monitoring for a user
 async function startUserMonitoring(userId) {
     if (!activeAgents.has(userId)) {
@@ -52,7 +55,21 @@ async function startUserMonitoring(userId) {
     monitors.forEach(monitor => {
         if (!userAgents.has(monitor.url)) {
             const agent = new WebsiteStatusAgent(monitor);
-            agent.on('statusResult', (result) => {
+            agent.on('statusResult', async (result) => {
+                const monitorKey = `${result.user_id}:${result.url}`;
+                const lastStatus = lastStatusMap.get(monitorKey);
+                const newStatus = result.status;
+
+                // Send notification if status changes or it's the first check
+                if (lastStatus === undefined || lastStatus !== newStatus) {
+                    const username = await db.getUsernameById(result.user_id); // Assumes this function exists
+                    const statusText = newStatus === 'online' ? 'The Website is Online' : 'The Website is Offline';
+                    const latencyText = result.latency !== null ? `${result.latency} ms` : 'N/A';
+                    const message = `Website monitored by <b>${username}</b>\n🌐Website: ${result.url}\n🌐Status: ${statusText}\n🌐Latency: ${latencyText}`;
+                    sendTelegramNotification(message);
+                }
+                lastStatusMap.set(monitorKey, newStatus);
+
                 // Find the websocket for this user and send the result
                 wss.clients.forEach(client => {
                     if (client.readyState === WebSocket.OPEN && client.userId === userId) {
@@ -76,6 +93,9 @@ function stopMonitor(userId, url) {
             userAgents.delete(url);
         }
     }
+    // Also remove from status tracking
+    const monitorKey = `${userId}:${url}`;
+    lastStatusMap.delete(monitorKey);
 }
 
 // Function to stop all monitors for a user

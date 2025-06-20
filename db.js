@@ -76,6 +76,6 @@ module.exports = {
   },
   getUsernameById: async (user_id) => {
     const res = await pool.query('SELECT username FROM users WHERE user_id = $1', [user_id]);
-    return res.rows[0]?.username || 'Unknown';
+    return res.rows.length > 0 ? res.rows[0].username : null;
   }
 }; 
