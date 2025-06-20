@@ -38,130 +38,96 @@ function getUserFromToken(req) {
     }
 }
 
-// In-memory map to track intervals for each monitor: { user_id:url -> { intervalId, interval_seconds } }
-const monitorIntervals = {};
+// Map to store active monitoring agents, keyed by user_id and then url
+const activeAgents = new Map();
 
-// In-memory map to track last status for each monitor: { user_id:url -> status }
-const lastStatusMap = {};
-
-async function updateMonitorIntervals() {
-    // Get all active monitors
-    const res = await db.query('SELECT * FROM active_monitors');
-    const newMonitors = {};
-    for (const monitor of res.rows) {
-        const key = `${monitor.user_id}:${monitor.url}`;
-        newMonitors[key] = monitor.interval_seconds;
-        // If not already monitoring, or interval changed, start/restart interval
-        if (
-            !monitorIntervals[key] ||
-            monitorIntervals[key].interval_seconds !== monitor.interval_seconds
-        ) {
-            if (monitorIntervals[key]) clearInterval(monitorIntervals[key].intervalId);
-            monitorIntervals[key] = {
-                intervalId: setInterval(() => checkAndLog(monitor), monitor.interval_seconds * 1000),
-                interval_seconds: monitor.interval_seconds
-            };
-        }
+// Function to start monitoring for a user
+async function startUserMonitoring(userId) {
+    if (!activeAgents.has(userId)) {
+        activeAgents.set(userId, new Map());
     }
-    // Remove intervals for monitors that no longer exist
-    for (const key in monitorIntervals) {
-        if (!newMonitors[key]) {
-            clearInterval(monitorIntervals[key].intervalId);
-            delete monitorIntervals[key];
+    const userAgents = activeAgents.get(userId);
+
+    const monitors = await db.getActiveMonitorsByUser(userId);
+    monitors.forEach(monitor => {
+        if (!userAgents.has(monitor.url)) {
+            const agent = new WebsiteStatusAgent(monitor);
+            agent.on('statusResult', (result) => {
+                // Find the websocket for this user and send the result
+                wss.clients.forEach(client => {
+                    if (client.readyState === WebSocket.OPEN && client.userId === userId) {
+                        client.send(JSON.stringify({ type: 'statusUpdate', monitor: result }));
+                    }
+                });
+                db.logMonitorResult(result);
+            });
+            agent.start();
+            userAgents.set(monitor.url, agent);
+        }
+    });
+}
+
+// Function to stop a specific monitor
+function stopMonitor(userId, url) {
+    if (activeAgents.has(userId)) {
+        const userAgents = activeAgents.get(userId);
+        if (userAgents.has(url)) {
+            userAgents.get(url).stop();
+            userAgents.delete(url);
         }
     }
 }
 
-async function checkAndLog(monitor) {
-    console.log(`[Monitor] Checking ${monitor.url} for user ${monitor.user_id}`);
-    const agent = new WebsiteStatusAgent();
-    const result = await agent.checkStatus(monitor.url);
-    let status = result.status;
-    let latency = result.latency ?? result.page_load_time;
-    let response_code = result.response_code;
-    let ip_address = result.ip_address;
-
-    // Compose key for this user and url
-    const key = `${monitor.user_id}:${monitor.url}`;
-    const prevStatus = lastStatusMap[key];
-    const newStatus = status;
-
-    // Only send notification if first check or status changed
-    if (prevStatus === undefined || prevStatus !== newStatus) {
-        // Fetch username from DB
-        const username = await db.getUsernameById(monitor.user_id);
-        const statusText = newStatus === 'up' ? 'The Website is Online' : 'The Website is Offline';
-        const latencyText = (latency !== undefined && latency !== null) ? `${latency} ms` : 'N/A';
-        const message = `Website monitored by <b>${username}</b>\n🌐Website: ${monitor.url}\n🌐Status: ${statusText}\n🌐Latency: ${latencyText}`;
-        await sendTelegramNotification(message);
-    }
-    // Update last known status
-    lastStatusMap[key] = newStatus;
-
-    try {
-        await db.logMonitorResult({
-            url: monitor.url,
-            status,
-            user_id: monitor.user_id,
-            latency,
-            response_code,
-            performance_metrics: null,
-            ip_address
-        });
-        console.log(`[Monitor] Logged result for ${monitor.url} (user ${monitor.user_id})`);
-    } catch (dbErr) {
-        console.error(`[Monitor] DB log error for ${monitor.url} (user ${monitor.user_id}):`, dbErr);
+// Function to stop all monitors for a user
+function stopAllUserMonitoring(userId) {
+    if (activeAgents.has(userId)) {
+        const userAgents = activeAgents.get(userId);
+        userAgents.forEach(agent => agent.stop());
+        activeAgents.delete(userId);
     }
 }
 
-// On server start, initialize intervals
-updateMonitorIntervals();
-
-// Add or update an active monitor
-app.post('/api/monitor', async (req, res) => {
+// Add a new monitor
+app.post('/api/monitors', async (req, res) => {
     const user = getUserFromToken(req);
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    const { url, interval_seconds } = req.body;
-    if (!url || ![5, 10, 20].includes(Number(interval_seconds))) {
-        return res.status(400).json({ error: 'Invalid url or interval' });
+
+    const { url, interval } = req.body;
+    if (!url || !interval) {
+        return res.status(400).json({ error: 'URL and interval are required.' });
     }
+
     try {
-        const monitor = await db.upsertActiveMonitor(user.user_id, url, interval_seconds);
-        await updateMonitorIntervals();
-        res.json(monitor);
+        const newMonitor = await db.upsertActiveMonitor(user.user_id, url, interval);
+        // Start monitoring immediately
+        startUserMonitoring(user.user_id);
+        res.status(201).json(newMonitor);
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-// List active monitors for user
-app.get('/api/monitors', async (req, res) => {
+// Remove a monitor
+app.post('/api/monitors/remove', async (req, res) => {
     const user = getUserFromToken(req);
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
-    try {
-        const monitors = await db.getActiveMonitorsByUser(user.user_id);
-        res.json(monitors);
-    } catch (err) {
-        res.status(500).json({ error: 'Server error' });
-    }
-});
 
-// Remove an active monitor
-app.delete('/api/monitor', async (req, res) => {
-    const user = getUserFromToken(req);
-    if (!user) return res.status(401).json({ error: 'Unauthorized' });
     const { url } = req.body;
-    if (!url) return res.status(400).json({ error: 'URL required' });
+    if (!url) {
+        return res.status(400).json({ error: 'URL is required.' });
+    }
+
     try {
         await db.removeActiveMonitor(user.user_id, url);
-        await updateMonitorIntervals();
-        res.json({ success: true });
+        // Stop the agent for this monitor
+        stopMonitor(user.user_id, url);
+        res.json({ message: 'Monitor removed successfully.' });
     } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-// Add /api/history endpoint
+// Get user's monitoring history
 app.get('/api/history', async (req, res) => {
     const user = getUserFromToken(req);
     if (!user) return res.status(401).json({ error: 'Unauthorized' });
@@ -182,20 +148,42 @@ wss.on('connection', (ws) => {
             ws.send(JSON.stringify({ error: 'Invalid message format.' }));
             return;
         }
-        const { url, token } = data;
+
+        const { type, token } = data;
         if (!token) {
             ws.send(JSON.stringify({ error: 'Authentication required.' }));
-            return;
+            return ws.close();
         }
+
+        let userPayload;
         try {
-            jwt.verify(token, JWT_SECRET);
+            userPayload = jwt.verify(token, JWT_SECRET);
+            ws.userId = userPayload.user_id; // Assign user_id to the websocket connection
         } catch (err) {
             ws.send(JSON.stringify({ error: 'Invalid or expired token.' }));
-            return;
+            return ws.close();
         }
-        const agent = new WebsiteStatusAgent();
-        const result = await agent.checkStatus(url);
-        ws.send(JSON.stringify(result));
+
+        if (type === 'getMonitors') {
+            const monitors = await db.getActiveMonitorsByUser(ws.userId);
+            ws.send(JSON.stringify({ type: 'initialMonitors', monitors }));
+            // Start monitoring for this user if not already started
+            startUserMonitoring(ws.userId);
+        }
+    });
+
+    ws.on('close', () => {
+        // Stop monitoring for this user if they have no other active connections
+        let hasOtherConnection = false;
+        wss.clients.forEach(client => {
+            if (client !== ws && client.readyState === WebSocket.OPEN && client.userId === ws.userId) {
+                hasOtherConnection = true;
+            }
+        });
+
+        if (!hasOtherConnection && ws.userId) {
+            stopAllUserMonitoring(ws.userId);
+        }
     });
 });
 

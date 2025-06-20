@@ -47,12 +47,28 @@ signoutBtn.onclick = () => {
 let ws;
 function connectWebSocket() {
   ws = new WebSocket(`ws://${window.location.host}`);
+
+  ws.onopen = () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        // Ensure monitoring agents are active on the server
+        ws.send(JSON.stringify({ type: 'getMonitors', token }));
+    }
+  };
+
   ws.onmessage = (event) => {
     const data = JSON.parse(event.data);
     if (data.error) {
       resultDiv.textContent = `Error: ${data.error}`;
-    } else {
-      resultDiv.textContent = `Status for ${data.url}: ${data.status} (${data.statusText})`;
+    } else if (data.type === 'statusUpdate') {
+      const { monitor } = data;
+      const lastUrlEntered = urlInput.value.trim();
+      // Only show status for the URL just submitted on this page
+      if (lastUrlEntered && monitor.url.toLowerCase() === lastUrlEntered.toLowerCase()) {
+        const statusText = monitor.status === 'online' ? 'Online' : 'Offline';
+        const latencyText = monitor.latency !== null ? `${monitor.latency} ms` : 'N/A';
+        resultDiv.textContent = `Initial Status for ${monitor.url}: ${statusText} | Latency: ${latencyText}`;
+      }
     }
   };
   ws.onerror = () => {
@@ -72,19 +88,25 @@ checkBtn.addEventListener('click', async () => {
     resultDiv.textContent = 'Please enter a URL.';
     return;
   }
-  resultDiv.textContent = 'Checking...';
-  ws.send(JSON.stringify({ url, token: localStorage.getItem('token') }));
+  resultDiv.textContent = 'Starting monitor...';
+  
+  // This is no longer needed; the fetch call below triggers the monitoring.
+  // ws.send(JSON.stringify({ url, token: localStorage.getItem('token') }));
 
   // Add to active monitors with selected interval
-  const res = await fetch('/api/monitor', {
+  const res = await fetch('/api/monitors', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + localStorage.getItem('token')
     },
-    body: JSON.stringify({ url, interval_seconds: interval })
+    body: JSON.stringify({ url, interval: interval })
   });
-  // Optionally, handle the response if you want to show a message
-  // const data = await res.json();
-  // if (res.ok) resultDiv.textContent += ' (Now monitoring)';
+
+  // The result will be displayed via the websocket onmessage handler.
+  // We only handle the error case here.
+  if (!res.ok) {
+    const data = await res.json();
+    resultDiv.textContent = `Error: ${data.error || 'Failed to start monitoring.'}`;
+  }
 }); 
