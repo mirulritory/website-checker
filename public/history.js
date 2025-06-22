@@ -9,9 +9,59 @@ document.addEventListener('DOMContentLoaded', () => {
     let allLogs = [];
     let uniqueUrls = [];
     let currentUrl = null;
+    let socket;
 
     function isAuthenticated() {
         return !!localStorage.getItem('token');
+    }
+
+    function connectWebSocket() {
+        // Only connect if user is authenticated
+        if (!localStorage.getItem('token')) {
+            console.log('User not authenticated, skipping WebSocket connection');
+            return;
+        }
+
+        // Close existing connection if any
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            console.log('Closing existing WebSocket connection');
+            socket.close();
+        }
+
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const host = window.location.host;
+        socket = new WebSocket(`${protocol}://${host}`);
+
+        socket.onopen = () => {
+            console.log('History WebSocket connection established from history.html');
+            const token = localStorage.getItem('token');
+            if (token) {
+                socket.send(JSON.stringify({ type: 'getMonitors', token }));
+            }
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'statusUpdate') {
+                // Optionally handle real-time updates for history page
+                console.log('Received status update:', data.monitor);
+            }
+        };
+
+        socket.onclose = () => {
+            console.log('History WebSocket connection closed. Reconnecting...');
+            // Only reconnect if still authenticated
+            setTimeout(() => {
+                if (localStorage.getItem('token')) {
+                    connectWebSocket();
+                }
+            }, 1000); // Reconnect after 1 second
+        };
+
+        socket.onerror = (error) => {
+            console.error('History WebSocket error:', error);
+            socket.close();
+        };
     }
 
     function formatDate(dateStr) {
@@ -173,14 +223,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (backHomeBtn) {
-        backHomeBtn.addEventListener('click', () => window.location.href = 'dashboard.html');
+        backHomeBtn.addEventListener('click', () => {
+            // Close WebSocket connection before navigating
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
+            window.location.href = 'dashboard.html';
+        });
     }
 
     timePeriodSelect.addEventListener('change', renderLatencyChart);
 
+    // Handle browser/tab closing
+    window.addEventListener('beforeunload', () => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.close();
+        }
+    });
+
     if (!isAuthenticated()) {
         window.location.href = 'index.html';
     } else {
+        connectWebSocket();
         fetchHistory();
     }
 }); 

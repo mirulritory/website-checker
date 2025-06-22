@@ -1,5 +1,25 @@
 function isAuthenticated() {
-  return !!localStorage.getItem('token');
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+  
+  try {
+    const payload = parseJwt(token);
+    if (!payload) return false;
+    
+    // Check if token is expired
+    const currentTime = Date.now() / 1000;
+    if (payload.exp && payload.exp < currentTime) {
+      console.log('Token expired, removing from localStorage');
+      localStorage.removeItem('token');
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.log('Invalid token, removing from localStorage');
+    localStorage.removeItem('token');
+    return false;
+  }
 }
 
 function parseJwt(token) {
@@ -40,15 +60,39 @@ if (!isAuthenticated()) {
 ongoingBtn.onclick = () => window.location.href = 'monitor.html';
 historyBtn.onclick = () => window.location.href = 'history.html';
 signoutBtn.onclick = () => {
+  // Close WebSocket connection before signing out
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.close();
+  }
   localStorage.removeItem('token');
   window.location.href = 'index.html';
 };
 
+// Handle browser/tab closing
+window.addEventListener('beforeunload', () => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.close();
+  }
+});
+
 let ws;
 function connectWebSocket() {
+  // Only connect if user is authenticated
+  if (!isAuthenticated()) {
+    console.log('User not authenticated, skipping WebSocket connection');
+    return;
+  }
+
+  // Close existing connection if any
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    console.log('Closing existing WebSocket connection');
+    ws.close();
+  }
+
   ws = new WebSocket(`ws://${window.location.host}`);
 
   ws.onopen = () => {
+    console.log('Dashboard WebSocket connection established from dashboard.html');
     const token = localStorage.getItem('token');
     if (token) {
         // Ensure monitoring agents are active on the server
@@ -74,6 +118,16 @@ function connectWebSocket() {
   ws.onerror = () => {
     resultDiv.textContent = 'WebSocket error. Please refresh the page.';
   };
+  
+  ws.onclose = () => {
+    console.log('Dashboard WebSocket connection closed');
+    // Only reconnect if still authenticated
+    setTimeout(() => {
+      if (isAuthenticated()) {
+        connectWebSocket();
+      }
+    }, 2000);
+  };
 }
 connectWebSocket();
 
@@ -83,7 +137,7 @@ checkBtn.addEventListener('click', async () => {
     return;
   }
   const url = urlInput.value.trim();
-  const interval = parseInt(intervalSelect.value, 10);
+  const interval = intervalSelect ? parseInt(intervalSelect.value, 10) : 10;
   if (!url) {
     resultDiv.textContent = 'Please enter a URL.';
     return;

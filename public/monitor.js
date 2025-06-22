@@ -8,17 +8,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (backHomeBtn) {
         backHomeBtn.addEventListener('click', () => {
+            // Close WebSocket connection before navigating
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
             window.location.href = 'dashboard.html';
         });
     }
 
+    // Handle browser/tab closing
+    window.addEventListener('beforeunload', () => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.close();
+        }
+    });
+
     function connectWebSocket() {
+        // Only connect if user is authenticated
+        if (!localStorage.getItem('token')) {
+            console.log('User not authenticated, skipping WebSocket connection');
+            return;
+        }
+
+        // Close existing connection if any
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            console.log('Closing existing WebSocket connection');
+            socket.close();
+        }
+
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const host = window.location.host;
         socket = new WebSocket(`${protocol}://${host}`);
 
         socket.onopen = () => {
-            console.log('WebSocket connection established.');
+            console.log('WebSocket connection established from monitor.html');
             // Request monitor list once connected
             const token = localStorage.getItem('token');
             if (token) {
@@ -38,7 +61,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         socket.onclose = () => {
             console.log('WebSocket connection closed. Reconnecting...');
-            setTimeout(connectWebSocket, 1000); // Reconnect after 1 second
+            // Only reconnect if still authenticated
+            setTimeout(() => {
+                if (localStorage.getItem('token')) {
+                    connectWebSocket();
+                }
+            }, 1000); // Reconnect after 1 second
         };
 
         socket.onerror = (error) => {

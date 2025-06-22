@@ -1,9 +1,21 @@
 // WebSocket connection (will be reconnected after auth)
 let ws;
 
+console.log('Script.js loaded, checking authentication...');
+
 // Immediately check for authentication and redirect if necessary
-if (localStorage.getItem('token')) {
-  window.location.replace('dashboard.html');
+if (isAuthenticated()) {
+  console.log('User is authenticated, showing authenticated UI');
+  // User is already signed in, show authenticated UI
+  document.getElementById('authButtons').style.display = 'none';
+  document.getElementById('navButtons').style.display = 'block';
+  showUserInfo();
+  connectWebSocket();
+} else {
+  console.log('User is not authenticated, showing login UI');
+  // User is not signed in, show sign-in/sign-up buttons
+  document.getElementById('authButtons').style.display = 'block';
+  document.getElementById('navButtons').style.display = 'none';
 }
 
 const urlInput = document.getElementById('urlInput');
@@ -56,7 +68,42 @@ showSigninBtn.onclick = () => showModal(signinModal);
 showSignupBtn.onclick = () => showModal(signupModal);
 
 function isAuthenticated() {
-  return !!localStorage.getItem('token');
+  const token = localStorage.getItem('token');
+  console.log('Checking authentication, token exists:', !!token);
+  
+  if (!token) {
+    console.log('No token found in localStorage');
+    return false;
+  }
+  
+  try {
+    const payload = parseJwt(token);
+    console.log('Token payload:', payload);
+    
+    if (!payload) {
+      console.log('Failed to parse token payload');
+      localStorage.removeItem('token');
+      return false;
+    }
+    
+    // Check if token is expired
+    const currentTime = Date.now() / 1000;
+    console.log('Current time:', currentTime, 'Token exp:', payload.exp);
+    
+    if (payload.exp && payload.exp < currentTime) {
+      console.log('Token expired, removing from localStorage');
+      localStorage.removeItem('token');
+      return false;
+    }
+    
+    console.log('Token is valid');
+    return true;
+  } catch (error) {
+    console.log('Error parsing token:', error);
+    console.log('Invalid token, removing from localStorage');
+    localStorage.removeItem('token');
+    return false;
+  }
 }
 
 function parseJwt(token) {
@@ -68,15 +115,41 @@ function parseJwt(token) {
 }
 
 function connectWebSocket() {
-  ws = new WebSocket(`ws://${window.location.host}`);
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.error) {
-      resultDiv.textContent = `Error: ${data.error}`;
-    } else {
-      resultDiv.textContent = `Status for ${data.url}: ${data.status} (${data.statusText})`;
+  console.log('connectWebSocket called');
+  
+  // Only connect if user is authenticated
+  if (!isAuthenticated()) {
+    console.log('User not authenticated, skipping WebSocket connection');
+    return;
+  }
+
+  console.log('Creating WebSocket connection...');
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const host = window.location.host;
+  ws = new WebSocket(`${protocol}://${host}`);
+
+  ws.onopen = () => {
+    console.log('WebSocket connection established from index.html');
+    const token = localStorage.getItem('token');
+    if (token) {
+      console.log('Sending authentication message');
+      ws.send(JSON.stringify({ type: 'getMonitors', token }));
     }
   };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'statusUpdate') {
+      const { monitor } = data;
+      const lastUrlEntered = urlInput.value.trim();
+      if (lastUrlEntered && monitor.url.toLowerCase() === lastUrlEntered.toLowerCase()) {
+        const statusText = monitor.status === 'online' ? 'Online' : 'Offline';
+        const latencyText = monitor.latency !== null ? `${monitor.latency} ms` : 'N/A';
+        resultDiv.textContent = `Status for ${monitor.url}: ${statusText} | Latency: ${latencyText}`;
+      }
+    }
+  };
+
   ws.onerror = () => {
     resultDiv.textContent = 'WebSocket error. Please refresh the page.';
   };
@@ -184,7 +257,6 @@ signupSubmit.onclick = async () => {
 signoutBtn.onclick = () => {
   localStorage.removeItem('token');
   updateAuthUI();
-  connectWebSocket();
 };
 
 ongoingBtn.onclick = () => window.location.href = 'monitor.html';
@@ -192,29 +264,29 @@ historyBtn.onclick = () => window.location.href = 'history.html';
 
 function updateAuthUI() {
   if (isAuthenticated()) {
-    signoutBtn.style.display = '';
-    navButtons.style.display = '';
-    authButtons.style.display = 'none';
-    preAuthSection.style.display = 'none';
-    // Show username
-    const token = localStorage.getItem('token');
-    const payload = parseJwt(token);
-    if (payload && payload.username) {
-      usernameDisplay.textContent = payload.username;
-      userInfo.style.display = '';
-    } else {
-      userInfo.style.display = 'none';
+    if (signoutBtn) signoutBtn.style.display = '';
+    if (navButtons) navButtons.style.display = '';
+    if (authButtons) authButtons.style.display = 'none';
+    if (preAuthSection) preAuthSection.style.display = 'none';
+    if (usernameDisplay && userInfo) {
+      const token = localStorage.getItem('token');
+      const payload = parseJwt(token);
+      if (payload && payload.username) {
+        usernameDisplay.textContent = payload.username;
+        userInfo.style.display = '';
+      } else {
+        userInfo.style.display = 'none';
+      }
     }
   } else {
-    signoutBtn.style.display = 'none';
-    navButtons.style.display = 'none';
-    userInfo.style.display = 'none';
-    authButtons.style.display = '';
-    preAuthSection.style.display = '';
-    resultDiv.textContent = '';
+    if (signoutBtn) signoutBtn.style.display = 'none';
+    if (navButtons) navButtons.style.display = 'none';
+    if (userInfo) userInfo.style.display = 'none';
+    if (authButtons) authButtons.style.display = '';
+    if (preAuthSection) preAuthSection.style.display = '';
+    if (resultDiv) resultDiv.textContent = '';
   }
 }
 
 // Initial UI setup
-updateAuthUI();
-connectWebSocket(); 
+updateAuthUI(); 

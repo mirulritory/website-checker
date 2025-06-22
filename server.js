@@ -53,7 +53,7 @@ async function startUserMonitoring(userId) {
 
     const monitors = await db.getActiveMonitorsByUser(userId);
     monitors.forEach(monitor => {
-        if (!userAgents.has(monitor.url)) {
+        if (userAgents && !userAgents.has(monitor.url)) {
             const agent = new WebsiteStatusAgent(monitor);
             agent.on('statusResult', async (result) => {
                 const monitorKey = `${result.user_id}:${result.url}`;
@@ -160,17 +160,21 @@ app.get('/api/history', async (req, res) => {
 });
 
 wss.on('connection', (ws) => {
+    console.log(`New WebSocket connection established (Total connections: ${wss.clients.size})`);
+    
     ws.on('message', async (message) => {
         let data;
         try {
             data = JSON.parse(message);
         } catch (e) {
+            console.log('Invalid message format received');
             ws.send(JSON.stringify({ error: 'Invalid message format.' }));
             return;
         }
 
         const { type, token } = data;
         if (!token) {
+            console.log('No token provided in WebSocket message');
             ws.send(JSON.stringify({ error: 'Authentication required.' }));
             return ws.close();
         }
@@ -179,7 +183,9 @@ wss.on('connection', (ws) => {
         try {
             userPayload = jwt.verify(token, JWT_SECRET);
             ws.userId = userPayload.user_id; // Assign user_id to the websocket connection
+            console.log(`User ${ws.userId} authenticated (Total active users: ${new Set([...wss.clients].map(client => client.userId).filter(id => id)).size})`);
         } catch (err) {
+            console.log('Invalid or expired token provided');
             ws.send(JSON.stringify({ error: 'Invalid or expired token.' }));
             return ws.close();
         }
@@ -193,23 +199,28 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        // Stop monitoring for this user if they have no other active connections
-        let hasOtherConnection = false;
-        wss.clients.forEach(client => {
-            if (client !== ws && client.readyState === WebSocket.OPEN && client.userId === ws.userId) {
-                hasOtherConnection = true;
-            }
-        });
-
-        if (!hasOtherConnection && ws.userId) {
-            stopAllUserMonitoring(ws.userId);
+        // Only log if we have a valid userId
+        if (ws.userId) {
+            console.log(`User ${ws.userId} disconnected (Remaining connections: ${wss.clients.size})`);
+        } else {
+            console.log('Unauthenticated connection closed');
         }
+        
+        // Don't stop monitoring - let it continue running server-side
+        // This allows monitoring to persist even when user signs out or closes browser
     });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    
+    // Log server status every 30 seconds
+    setInterval(() => {
+        const activeConnections = wss.clients.size;
+        const activeUsers = new Set([...wss.clients].map(client => client.userId).filter(id => id));
+        console.log(`Server Status - Active connections: ${activeConnections}, Active users: ${activeUsers.size} (${[...activeUsers].join(', ')})`);
+    }, 30000);
 });
 
 module.exports = WebsiteStatusAgent;
