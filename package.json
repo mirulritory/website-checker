@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "postinstall": "echo 'Installation complete'"
+    "postinstall": "npm rebuild bcrypt --build-from-source"
   },
   "dependencies": {
     "express": "^4.18.2",
