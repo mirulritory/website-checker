@@ -3,6 +3,7 @@ const dns = require('dns').promises;
 const { EventEmitter } = require('events');
 const https = require('https');
 const http = require('http');
+const db = require('./db');
 
 class WebsiteStatusAgent extends EventEmitter {
     constructor(monitor) {
@@ -30,16 +31,16 @@ class WebsiteStatusAgent extends EventEmitter {
         this.healthStatus = 'healthy';
         console.log(`Agent ${this.agentId} started monitoring ${this.monitor.url}`);
         
-        // Perform an immediate check, then start the interval
+        // Perform an immediate check, then start the interval (fixed 10 seconds)
         this.checkStatus();
-        this.intervalId = setInterval(() => this.checkStatus(), this.monitor.interval_seconds * 1000);
+        this.intervalId = setInterval(() => this.checkStatus(), 10000);
         
         // Emit agent status
         this.emit('agentStatus', {
             agentId: this.agentId,
             status: 'started',
             url: this.monitor.url,
-            interval: this.monitor.interval_seconds,
+            interval: 10,
             timestamp: new Date().toISOString()
         });
     }
@@ -90,9 +91,31 @@ class WebsiteStatusAgent extends EventEmitter {
         };
 
         try {
+            // Check for active planned downtime first
+            const plannedDowntime = await db.getActivePlannedDowntime(url);
+            console.log(`Checking planned downtime for ${url}:`, plannedDowntime);
+            if (plannedDowntime) {
+                console.log(`Website ${url} is in planned maintenance:`, plannedDowntime.reason);
+                // Website is in planned maintenance
+                result.status = 'maintenance';
+                result.error_message = plannedDowntime.reason;
+                result.latency = 0;
+                result.response_code = 503; // Service Unavailable
+                
+                this.lastCheckTime = Date.now();
+                this.performanceMetrics.totalChecks++;
+                
+                // Emit the result
+                this.emit('statusResult', result);
+                return;
+            }
+
+            console.log(`No planned downtime found, checking actual website status for ${url}`);
+            
             // Enhanced DNS lookup with timeout
             const ipAddress = await this.resolveDNS(url);
             result.ip_address = ipAddress;
+            console.log(`DNS resolved to: ${ipAddress}`);
 
             // Enhanced HTTP/HTTPS check
             const response = await this.performHttpCheck(url);
@@ -101,15 +124,19 @@ class WebsiteStatusAgent extends EventEmitter {
             result.page_load_time = response.loadTime || result.latency;
             result.ssl_status = response.sslStatus;
             result.ssl_expiry = response.sslExpiry;
+            
+            console.log(`HTTP response: ${response.status}, latency: ${result.latency}ms`);
 
             if (response.status >= 200 && response.status < 400) {
                 result.status = 'online';
                 this.consecutiveFailures = 0;
                 this.performanceMetrics.successfulChecks++;
+                console.log(`Website ${url} is ONLINE`);
             } else {
                 result.status = 'offline';
                 result.error_message = `HTTP ${response.status}`;
                 this.consecutiveFailures++;
+                console.log(`Website ${url} is OFFLINE (HTTP ${response.status})`);
             }
 
         } catch (error) {
@@ -117,6 +144,7 @@ class WebsiteStatusAgent extends EventEmitter {
             result.status = 'offline';
             result.error_message = error.message;
             this.consecutiveFailures++;
+            console.log(`Error checking website ${url}:`, error.message);
         }
 
         // Update performance metrics
@@ -226,7 +254,7 @@ class WebsiteStatusAgent extends EventEmitter {
         return {
             agentId: this.agentId,
             url: this.monitor.url,
-            interval: this.monitor.interval_seconds,
+            interval: 10,
             isRunning: this.isRunning,
             healthStatus: this.healthStatus,
             lastCheckTime: this.lastCheckTime,
@@ -238,14 +266,13 @@ class WebsiteStatusAgent extends EventEmitter {
     updateInterval(newInterval) {
         if (this.intervalId) {
             clearInterval(this.intervalId);
-            this.monitor.interval_seconds = newInterval;
-            this.intervalId = setInterval(() => this.checkStatus(), newInterval * 1000);
+            this.intervalId = setInterval(() => this.checkStatus(), 10000);
             
             this.emit('agentStatus', {
                 agentId: this.agentId,
                 status: 'interval_updated',
                 url: this.monitor.url,
-                interval: newInterval,
+                interval: 10,
                 timestamp: new Date().toISOString()
             });
         }

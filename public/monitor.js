@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+
+
     // Handle browser/tab closing
     window.addEventListener('beforeunload', () => {
         if (socket && socket.readyState === WebSocket.OPEN) {

@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentUrl = null;
     let socket;
 
+    // Add global variable to store filtered logs
+    let filteredLogs = [];
+    let lastRenderedUrl = null;
+    let lastLogs = [];
+
     function isAuthenticated() {
         return !!localStorage.getItem('token');
     }
@@ -69,7 +74,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderWebsiteList(urls, selectedUrl) {
+        // Show only the latest 5 URLs by default, but allow scrolling for more
         websiteListDiv.innerHTML = '<p class="subtitle">This is a list of history of your monitored websites. Select a website to see the details.</p>';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'website-list-scroll';
         urls.forEach(url => {
             const div = document.createElement('div');
             div.className = 'website-list-item' + (url === selectedUrl ? ' selected' : '');
@@ -77,8 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
             div.onclick = () => {
                 renderDetails(url);
             };
-            websiteListDiv.appendChild(div);
+            wrapper.appendChild(div);
         });
+        websiteListDiv.appendChild(wrapper);
     }
 
     async function fetchHistory() {
@@ -91,9 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
             });
             allLogs = await res.json();
+
             uniqueUrls = [...new Set(allLogs.map(log => log.url))];
             renderWebsiteList(uniqueUrls, null);
-            //detailsCard.innerHTML = '<p>Select a website to see its history.</p>';
             chartContainer.style.display = 'none';
         } catch (error) {
             console.error('Failed to fetch history:', error);
@@ -101,11 +110,118 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Helper to get reason for response code
+    function getReason(responseCode, status, errorMessage) {
+        // Check if it's maintenance status
+        if (status === 'maintenance' && errorMessage) {
+            return `Maintenance: ${errorMessage}`;
+        }
+
+        const reasons = {
+            200: 'OK',
+            201: 'Created',
+            202: 'Accepted',
+            204: 'No Content',
+            301: 'Moved Permanently',
+            302: 'Found',
+            304: 'Not Modified',
+            400: 'Bad Request',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+            404: 'Not Found',
+            408: 'Request Timeout',
+            429: 'Too Many Requests',
+            500: 'Internal Server Error',
+            502: 'Bad Gateway',
+            503: 'Service Unavailable',
+            504: 'Gateway Timeout',
+        };
+        if (!responseCode) return '-';
+        return reasons[responseCode] || 'Unknown';
+    }
+
+    // Helper to filter logs by search
+    function filterLogs(logs, search) {
+        if (!search) return logs;
+        const s = search.toLowerCase();
+        return logs.filter(log =>
+            (log.status && log.status.toLowerCase().includes(s)) ||
+            (getReason(log.response_code).toLowerCase().includes(s)) ||
+            (log.latency !== null && String(log.latency).includes(s)) ||
+            (log.response_code !== null && String(log.response_code).includes(s)) ||
+            (log.ip_address && log.ip_address.toLowerCase().includes(s)) ||
+            (log.timestamp && formatDate(log.timestamp).toLowerCase().includes(s))
+        );
+    }
+
+    // Attach search bar event
+    function setupLogSearchBar(logs) {
+        const searchBarContainer = document.getElementById('logSearchBarContainer');
+        const searchBar = document.getElementById('logSearchBar');
+        if (!searchBarContainer || !searchBar) return;
+        searchBarContainer.style.display = logs.length > 0 ? '' : 'none';
+        searchBar.value = '';
+        searchBar.oninput = () => {
+            filteredLogs = filterLogs(logs, searchBar.value);
+            renderLogTable(filteredLogs);
+        };
+    }
+
+    // Update the renderLogTable function
+    function renderLogTable(logs) {
+        const tableBody = document.querySelector('.log-table-scroll tbody');
+        if (!tableBody) return;
+
+        tableBody.innerHTML = logs.map(log => {
+            let statusColor, statusText;
+
+            if (log.status === 'maintenance') {
+                statusColor = 'orange';
+                statusText = 'MAINTENANCE';
+            } else if (['up', 'online', 'ONLINE'].includes(log.status)) {
+                statusColor = 'green';
+                statusText = 'ONLINE';
+            } else {
+                statusColor = 'red';
+                statusText = 'OFFLINE';
+            }
+
+            const reason = log.status === 'maintenance'
+                ? log.error_message || 'Planned maintenance'
+                : getReason(log.response_code);
+
+            return `
+            <tr>
+                <td style="color:${statusColor};font-weight:bold;">
+                    ${statusText}
+                </td>
+                <td>${reason}</td>
+                <td>${log.latency ?? '-'}</td>
+                <td>${log.response_code ?? '-'}</td>
+                <td>${log.ip_address ?? '-'}</td>
+                <td>${formatDate(log.timestamp)}</td>
+            </tr>
+        `;
+        }).join('');
+    }
+
     function renderDetails(url) {
         currentUrl = url;
         renderWebsiteList(uniqueUrls, url);
 
-        const logs = allLogs.filter(log => log.url === currentUrl);
+        console.log('Total allLogs:', allLogs.length);
+        console.log('Selected URL:', url);
+
+        // Include logs with status 'online', 'offline', or 'maintenance'
+        const logs = allLogs.filter(log => log.url === currentUrl &&
+            (log.status === 'online' || log.status === 'offline' || log.status === 'maintenance'));
+        
+        console.log('Filtered logs for', url, ':', logs.length);
+        
+        lastRenderedUrl = url;
+        lastLogs = logs;
+        filteredLogs = logs;
+
         if (logs.length === 0) {
             detailsCard.innerHTML = '<p>No history found for this website.</p>';
             chartContainer.style.display = 'none';
@@ -113,38 +229,78 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const isOnline = (status) => ['up', 'online', 'ONLINE'].includes(status);
-        const offlineCount = logs.filter(log => !isOnline(log.status)).length;
+        const isMaintenance = (status) => status === 'maintenance';
+        const offlineCount = logs.filter(log => !isOnline(log.status) && !isMaintenance(log.status)).length;
+        const maintenanceCount = logs.filter(log => isMaintenance(log.status)).length;
         const highestLatency = Math.max(0, ...logs.map(log => log.latency));
 
-        const tableRows = logs.slice(0, 20).map(log => `
-            <tr>
-                <td style="color:${isOnline(log.status) ? 'green' : 'red'};font-weight:bold;">
-                    ${isOnline(log.status) ? 'ONLINE' : 'OFFLINE'}
-                </td>
-                <td>${log.latency ?? '-'}</td>
-                <td>${log.response_code ?? '-'}</td>
-                <td>${log.ip_address ?? '-'}</td>
-                <td>${formatDate(log.timestamp)}</td>
-            </tr>
-        `).join('');
+        const tableRows = logs.map(log => {
+            let statusText, statusColor;
+            if (log.status === 'maintenance') {
+                statusText = 'MAINTENANCE';
+                statusColor = 'orange';
+            } else if (isOnline(log.status)) {
+                statusText = 'ONLINE';
+                statusColor = 'green';
+            } else {
+                statusText = 'OFFLINE';
+                statusColor = 'red';
+            }
+            
+            const reason = log.status === 'maintenance' 
+                ? log.error_message || 'Planned maintenance'
+                : getReason(log.response_code);
+            
+            return `
+                <tr>
+                    <td style="color:${statusColor};font-weight:bold;">
+                        ${statusText}
+                    </td>
+                    <td>${reason}</td>
+                    <td>${log.latency ?? '-'}</td>
+                    <td>${log.response_code ?? '-'}</td>
+                    <td>${log.ip_address ?? '-'}</td>
+                    <td>${formatDate(log.timestamp)}</td>
+                </tr>
+            `;
+        }).join('');
 
         detailsCard.innerHTML = `
             <div class="details-card">
-                <div class="details-title">${currentUrl}</div>
-                <div class="details-section"><b>Total Checks:</b> ${logs.length}</div>
-                <div class="details-section"><b>Offline Count:</b> ${offlineCount}</div>
-                <div class="details-section"><b>Highest Latency:</b> ${highestLatency} ms</div>
-                <div class="details-section"><b>Recent Checks:</b>
-                    <table class="log-table">
-                        <thead>
-                            <tr>
-                                <th>Status</th><th>Latency (ms)</th><th>Response Code</th><th>IP</th><th>Checked At</th>
-                            </tr>
-                        </thead>
-                        <tbody>${tableRows}</tbody>
-                    </table>
+                <div class="details-title">URL: ${currentUrl}</div>
+                <div class="details-summary" style="display: flex; gap: 20px; margin-bottom: 10px;">
+                    <div class="details-section" style="flex: 1; padding: 10px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                        <b>Total Checks</b><br>${logs.length}
+                    </div>
+                    <div class="details-section" style="flex: 1; padding: 10px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                        <b>Offline Count</b><br>${offlineCount}
+                    </div>
+                    <div class="details-section" style="flex: 1; padding: 10px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                        <b>Maintenance</b><br>${maintenanceCount}
+                    </div>
+                    <div class="details-section" style="flex: 1; padding: 10px; background: #f9f9f9; border-radius: 6px; text-align: center;">
+                        <b>Highest Latency</b><br>${highestLatency} ms
+                    </div>
+                </div>
+                <div class="details-section" style="text-align: left;"><b>Recent Checks:</b>
+                    <br>
+                    <div id="logSearchBarContainer" style="margin-bottom: 10px; margin-top: 10px">
+                        <input type="text" id="logSearchBar" placeholder="Search logs..." style="width: 1000px; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 16px;">
+                    </div>
+                    <div class="log-table-scroll">
+                        <table class="log-table">
+                            <thead>
+                                <tr>
+                                    <th>Status</th><th>Reason</th><th>Latency (ms)</th><th>Response Code</th><th>IP</th><th>Checked At</th>
+                                </tr>
+                            </thead>
+                            <tbody>${tableRows}</tbody>
+                        </table>
+                    </div>
                 </div>
             </div>`;
+
+        setupLogSearchBar(logs);
 
         if (logs.length > 1) {
             chartContainer.style.display = 'block';
@@ -154,10 +310,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
     function renderLatencyChart() {
         if (!currentUrl) return;
 
-        const logs = allLogs.filter(log => log.url === currentUrl);
+        // Only use logs with status 'online' or 'offline'
+        const logs = allLogs.filter(log => log.url === currentUrl && (log.status === 'online' || log.status === 'offline'));
         const view = timePeriodSelect.value;
 
         let labels = [];
@@ -231,6 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'dashboard.html';
         });
     }
+
+
 
     timePeriodSelect.addEventListener('change', renderLatencyChart);
 

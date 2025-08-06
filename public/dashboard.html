@@ -8,14 +8,15 @@
 </head>
 <body>
   <div id="navButtons" style="position:absolute; top:32px; right:48px; z-index:1000; text-align:right;">
+    <button id="profileBtn">Profile</button>
     <button id="ongoingBtn">Ongoing Monitor</button>
     <button id="historyBtn">History</button>
     <button id="signoutBtn">Sign Out</button>
   </div>
-  <div class="container">
+  <div class="center-card">
     <h1 style="color: #00b518;">Website Status Checker</h1>
     <div id="userInfo" class="welcome-text">Hello, you're signed in as <span id="usernameDisplay"></span></div>
-    <input type="text" id="urlInput" placeholder="Enter website URL (e.g. https://example.com)">
+    <input type="text" id="urlInput" placeholder="Enter website URL (e.g. https://example.com)" style="margin-bottom: 0px;">
     <div class="interval-group">
       <!--<span class="interval-label">Monitor for every</span>
       <select id="intervalSelect">
@@ -24,8 +25,14 @@
         <option value="20">20 seconds</option>
       </select> -->
     </div>
-    <button id="checkBtn">Check Status</button>
+    <button id="checkBtn" style="margin-top: 0px;">Check Status</button>
     <div id="result"></div>
+  </div>
+  <div class="top-urls-card" style="margin-left: 70px; margin-bottom: 40px;">
+    <h2 style="color: #00b518; margin-bottom: 9px; font-size: 20px; margin-top: 0px;">Top 5 Monitored URLs</h2>
+    <div id="topUrlsList" class="top-urls-list" style="font-size: 13px;">
+      <div class="loading">Loading...</div>
+    </div>
   </div>
   <script src="dashboard.js"></script>
 </body>

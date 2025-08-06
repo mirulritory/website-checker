@@ -8,13 +8,20 @@ const router = express.Router();
 
 // Sign Up
 router.post('/signup', async (req, res) => {
-  const { username, email, password, confirmPassword } = req.body;
-  if (!username || !email || !password || !confirmPassword) {
+  const { username, email, password, confirmPassword, phoneNumber } = req.body;
+  if (!username || !email || !password || !confirmPassword || !phoneNumber) {
     return res.status(400).json({ error: 'All fields are required.' });
   }
   if (password !== confirmPassword) {
     return res.status(400).json({ error: 'Passwords do not match.' });
   }
+  
+  // Phone number validation (basic format check)
+  const phoneRegex = /^[\+]?[0-9][\d]{9,10}$/;
+  if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
+    return res.status(400).json({ error: 'Please enter a valid phone number (10-11 digits).' });
+  }
+  
   try {
     const userExists = await db.query('SELECT * FROM users WHERE username = $1 OR email = $2', [username, email]);
     if (userExists.rows.length > 0) {
@@ -22,8 +29,8 @@ router.post('/signup', async (req, res) => {
     }
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await db.query(
-      'INSERT INTO users (username, email, password, role) VALUES ($1, $2, $3, $4) RETURNING user_id',
-      [username, email, hashedPassword, 'user']
+      'INSERT INTO users (username, email, password, role, phone_number) VALUES ($1, $2, $3, $4, $5) RETURNING user_id',
+      [username, email, hashedPassword, 'user', phoneNumber]
     );
     // Create and send token
     const token = jwt.sign(

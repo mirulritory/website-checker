@@ -11,7 +11,7 @@
         background: url('BG.png') no-repeat center center fixed;
         background-size: cover;
     }
-    .history-container { max-width: 700px; margin: 32px auto; }
+    .history-container { max-width: 1000px; margin: 32px auto; margin-bottom: 100px;}
     .history-title { color: #0a0; text-align: center; font-size: 2.2em; font-weight: bold; margin-bottom: 0.2em; }
     .history-desc { text-align: center; color: #444; margin-bottom: 1em; }
     .website-list { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 12px; margin-bottom: 18px; max-height: 180px; overflow-y: auto; }
@@ -19,7 +19,7 @@
     .website-list-item:hover, .website-list-item.selected { background: #e0ffe0; font-weight: bold; }
     .details-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 18px 20px; margin-top: 12px; }
     .details-title { color: #0a0; font-size: 1.3em; font-weight: bold; margin-bottom: 0.5em; }
-    .details-section { margin-bottom: 0.7em; }
+    .details-section { margin-bottom: 5px; text-align: center;  }
     .latency-list { background: #f8f8f8; border-radius: 6px; padding: 8px; max-height: 120px; overflow-y: auto; font-size: 0.98em; }
     .latency-list li { margin-bottom: 2px; }
     .back-btn {
@@ -63,15 +63,13 @@
   <div id="navButtons" style="position:absolute; top:32px; right:48px; z-index:1000; text-align:right;">
     <button id="backHomeBtn">Back to Home</button>
   </div>
-  <div class="container monitor-container">
+  <div class="container monitor-container" style="margin-bottom: 40px;">
     <h1 style="color:#00b518;">Monitoring History</h1>
     <div class="history-layout">
       <div id="websiteList" class="website-list-panel">
-        <!-- Website list will be rendered here -->
       </div>
       <div id="detailsSection" class="details-panel">
         <div id="detailsCard">
-          <!-- Details card will be rendered here -->
         </div>
         <div class="chart-container" style="display: none;">
           <div class="chart-options">

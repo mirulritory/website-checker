@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Website Status Checker</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    
+    
+    .profile-section {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    
+    .profile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .profile-title {
+      color: #00b518;
+      font-size: 24px;
+      font-weight: bold;
+      margin: 10px
+      
+    }
+    
+    .add-website-btn {
+      background: #00b518;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .add-website-btn:hover {
+      background: #008f14;
+    }
+    
+    .profile-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .info-item {
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #00b518;
+    }
+    
+    .info-label {
+      font-weight: bold;
+      color: #666;
+      font-size: 12px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    
+    .info-value {
+      color: #333;
+      font-size: 16px;
+    }
+    
+    .websites-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .websites-container {
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 12px;
+      padding-right: 20px;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      background: #f8f9fa;
+    }
+    
+    .websites-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .websites-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    .websites-container::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+    
+    .websites-container::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    
+    .website-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border-left: 4px solid #00b518;
+    }
+    
+    .website-url {
+      color: #333;
+      font-size: 16px;
+      word-break: break-all;
+      flex: 1;
+      margin-right: 16px;
+    }
+    
+    .remove-website-btn {
+      background: #ff3333;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    
+    .remove-website-btn:hover {
+      background: #cc0000;
+    }
+    
+    .add-action-btn {
+      background: #ffa500;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+      margin-right: 8px;
+    }
+    
+    .add-action-btn:hover {
+      background: #ff8c00;
+    }
+    
+    .no-websites {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+      padding: 20px;
+    }
+    
+    .maintenance-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f9f9f9;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border-left: 4px solid #ffa500;
+    }
+    
+    .maintenance-details {
+      flex: 1;
+    }
+    
+    .maintenance-url {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    
+    .maintenance-reason {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    
+    .maintenance-time {
+      color: #888;
+      font-size: 12px;
+    }
+    
+    .maintenance-status {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    
+    .status-scheduled {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .status-active {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .status-completed {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+    
+    .status-cancelled {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .cancel-maintenance-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .cancel-maintenance-btn:hover {
+      background: #c82333;
+    }
+    
+    .no-maintenance {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+      padding: 20px;
+    }
+    
+    .scheduled-maintenance-container {
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 12px;
+      padding-right: 20px;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      background: #f8f9fa;
+    }
+    
+    .scheduled-maintenance-container::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    .scheduled-maintenance-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+    
+    .scheduled-maintenance-container::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+    
+    .scheduled-maintenance-container::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    
+    /* Modal styles for add website */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    
+    .modal-content {
+      background-color: #fff;
+      margin: 15% auto;
+      padding: 24px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      position: relative;
+    }
+    
+    .modal-title {
+      color: #333;
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .modal input[type="url"] {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    
+    .modal-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .modal-btn.primary {
+      background: #00b518;
+      color: white;
+    }
+    
+    .modal-btn.primary:hover {
+      background: #008f14;
+    }
+    
+    .modal-btn.secondary {
+      background: #f8f9fa;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+    
+    .modal-btn.secondary:hover {
+      background: #e9ecef;
+    }
+    
+    .close {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      font-size: 24px;
+      font-weight: bold;
+      color: #aaa;
+      cursor: pointer;
+    }
+    
+    .close:hover {
+      color: #333;
+    }
+    
+    /* Planned Downtime Modal Styles */
+    .planned-downtime-modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+    
+    .planned-downtime-modal .modal-content {
+      background-color: #fff;
+      margin: 10% auto;
+      padding: 24px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+    }
+    
+    .planned-downtime-modal textarea {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    .planned-downtime-modal input[type="datetime-local"] {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    
+    .datetime-row {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .datetime-group {
+      flex: 1;
+    }
+    
+    .datetime-group label {
+      display: block;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    
+  </style>
+</head>
+<body>
+  <div id="navButtons" style="position:absolute; top:32px; right:48px; z-index:1000; text-align:right;">
+    <button id="backHomeBtn">Back to Home</button>
+  </div>
+  
+  <div class="container monitor-container" style="margin-bottom: 40px;">
+    <h1 style="color: #00b518; margin-bottom: 10px; font-size: 36px;">Profile</h1>
+    
+    <!-- User Credentials Section -->
+    <div class="profile-section">
+      <h2 class="profile-title">User Information</h2>
+      <div class="profile-info" id="profileInfo">
+        <!-- Profile info will be loaded here -->
+      </div>
+    </div>
+    
+    <!-- Websites Section -->
+    <div class="profile-section">
+      <div class="profile-header">
+        <h2 class="profile-title">My Websites</h2>
+        <button class="add-website-btn" id="addWebsiteBtn">Add Website</button>
+      </div>
+      <div id="websitesContainer">
+        <!-- Websites list will be loaded here -->
+      </div>
+    </div>
+    
+    <!-- Scheduled Maintenance Section -->
+    <div class="profile-section">
+      <h2 class="profile-title" style="text-align: left;">Scheduled Maintenance</h2>
+      <div id="scheduledMaintenanceContainer">
+        <!-- Scheduled maintenance list will be loaded here -->
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Website Modal -->
+  <div id="addWebsiteModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeModal">&times;</span>
+      <h3 class="modal-title">Add Website</h3>
+      <input type="url" id="websiteUrlInput" placeholder="https://example.com" required>
+      <div class="modal-buttons">
+        <button class="modal-btn secondary" id="cancelBtn">Cancel</button>
+        <button class="modal-btn primary" id="addBtn">Add Website</button>
+      </div>
+      <div id="modalError" style="color: #ff3333; margin-top: 12px; text-align: center;"></div>
+    </div>
+  </div>
+  
+  <!-- Planned Downtime Modal -->
+  <div id="plannedDowntimeModal" class="planned-downtime-modal">
+    <div class="modal-content">
+      <span class="close" id="closePlannedDowntimeModal">&times;</span>
+      <h3 class="modal-title">Schedule Maintenance</h3>
+      <div id="selectedWebsiteUrl" style="color: #666; margin-bottom: 16px; font-weight: bold;"></div>
+      
+      <label for="maintenanceReason">Reason for maintenance:</label>
+      <textarea id="maintenanceReason" placeholder="Enter the reason for planned downtime (e.g., Server maintenance, Security updates, etc.)" required></textarea>
+      
+      <div class="datetime-row">
+        <div class="datetime-group">
+          <label for="startDateTime">Start Time:</label>
+          <input type="datetime-local" id="startDateTime" required>
+        </div>
+        <div class="datetime-group">
+          <label for="endDateTime">End Time:</label>
+          <input type="datetime-local" id="endDateTime" required>
+        </div>
+      </div>
+      
+      <div class="modal-buttons">
+        <button class="modal-btn secondary" id="cancelPlannedDowntimeBtn">Cancel</button>
+        <button class="modal-btn primary" id="schedulePlannedDowntimeBtn">Schedule Maintenance</button>
+      </div>
+      <div id="plannedDowntimeError" style="color: #ff3333; margin-top: 12px; text-align: center;"></div>
+    </div>
+  </div>
+  
+  <script src="profile.js"></script>
+</body>
+</html> 

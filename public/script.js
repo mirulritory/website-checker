@@ -69,37 +69,22 @@ showSignupBtn.onclick = () => showModal(signupModal);
 
 function isAuthenticated() {
   const token = localStorage.getItem('token');
-  console.log('Checking authentication, token exists:', !!token);
-  
-  if (!token) {
-    console.log('No token found in localStorage');
-    return false;
-  }
+  if (!token) return false;
   
   try {
     const payload = parseJwt(token);
-    console.log('Token payload:', payload);
-    
-    if (!payload) {
-      console.log('Failed to parse token payload');
-      localStorage.removeItem('token');
-      return false;
-    }
+    if (!payload) return false;
     
     // Check if token is expired
     const currentTime = Date.now() / 1000;
-    console.log('Current time:', currentTime, 'Token exp:', payload.exp);
-    
     if (payload.exp && payload.exp < currentTime) {
       console.log('Token expired, removing from localStorage');
       localStorage.removeItem('token');
       return false;
     }
     
-    console.log('Token is valid');
     return true;
   } catch (error) {
-    console.log('Error parsing token:', error);
     console.log('Invalid token, removing from localStorage');
     localStorage.removeItem('token');
     return false;
@@ -111,6 +96,56 @@ function parseJwt(token) {
     return JSON.parse(atob(token.split('.')[1]));
   } catch {
     return null;
+  }
+}
+
+// URL validation function (same as dashboard.js)
+function validateURL(url) {
+  // Remove leading/trailing whitespace
+  url = url.trim();
+  
+  // Check if URL is empty
+  if (!url) {
+    return { isValid: false, error: 'Please enter a URL.' };
+  }
+  
+  // Check if URL starts with http:// or https://
+  if (!url.match(/^https?:\/\//i)) {
+    return { isValid: false, error: 'URL must start with http:// or https://' };
+  }
+  
+  // Check if URL has a valid domain structure
+  try {
+    const urlObj = new URL(url);
+    
+    // Check if hostname is valid (not empty and has at least one dot)
+    if (!urlObj.hostname || urlObj.hostname.length === 0) {
+      return { isValid: false, error: 'Invalid URL: missing hostname' };
+    }
+    
+    // Check if hostname has at least one dot (for domain)
+    if (!urlObj.hostname.includes('.')) {
+      return { isValid: false, error: 'Invalid URL: hostname must contain a domain (e.g., example.com)' };
+    }
+    
+    // Check if hostname doesn't start or end with a dot
+    if (urlObj.hostname.startsWith('.') || urlObj.hostname.endsWith('.')) {
+      return { isValid: false, error: 'Invalid URL: hostname cannot start or end with a dot' };
+    }
+    
+    // Check if hostname has valid characters
+    if (!urlObj.hostname.match(/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/)) {
+      return { isValid: false, error: 'Invalid URL: hostname contains invalid characters' };
+    }
+    
+    // Check if URL is not too long (reasonable limit)
+    if (url.length > 2048) {
+      return { isValid: false, error: 'URL is too long (maximum 2048 characters)' };
+    }
+    
+    return { isValid: true, url: url };
+  } catch (error) {
+    return { isValid: false, error: 'Invalid URL format' };
   }
 }
 
@@ -161,21 +196,27 @@ checkBtn.addEventListener('click', async () => {
     return;
   }
   const url = urlInput.value.trim();
-  if (!url) {
-    resultDiv.textContent = 'Please enter a URL.';
+  
+  // Validate URL before proceeding
+  const validation = validateURL(url);
+  if (!validation.isValid) {
+    resultDiv.textContent = validation.error;
+    resultDiv.style.color = '#ff4444';
     return;
   }
+  
   resultDiv.textContent = 'Checking...';
-  ws.send(JSON.stringify({ url, token: localStorage.getItem('token') }));
+  resultDiv.style.color = '';
+  ws.send(JSON.stringify({ url: validation.url, token: localStorage.getItem('token') }));
 
-  // Also add to active monitors with a default interval (e.g., 10s)
+  // Also add to active monitors
   const res = await fetch('/api/monitor', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + localStorage.getItem('token')
     },
-    body: JSON.stringify({ url, interval_seconds: 10 }) // Default interval: 10s
+    body: JSON.stringify({ url: validation.url })
   });
   // Optionally, handle the response if you want to show a message
   // const data = await res.json();
@@ -210,18 +251,25 @@ signinSubmit.onclick = async () => {
 signupSubmit.onclick = async () => {
   const username = document.getElementById('signupUsername').value.trim();
   const email = document.getElementById('signupEmail').value.trim();
+  const phoneNumber = document.getElementById('signupPhoneNumber').value.trim();
   const password = document.getElementById('signupPassword').value;
   const confirmPassword = document.getElementById('signupConfirmPassword').value;
   signupError.textContent = '';
 
   // Check for empty fields
-  if (!username || !email || !password || !confirmPassword) {
+  if (!username || !email || !phoneNumber || !password || !confirmPassword) {
     signupError.textContent = 'All fields are required.';
     return;
   }
   // Email validation
   if (!email.includes('@') || !email.endsWith('.com')) {
     signupError.textContent = 'Please enter a valid email address (must contain @ and end with .com).';
+    return;
+  }
+  // Phone number validation (basic format check)
+  const phoneRegex = /^[\+]?[0-9][\d]{9,10}$/;
+  if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
+    signupError.textContent = 'Please enter a valid phone number (10-11 digits).';
     return;
   }
   // Password length validation
@@ -237,7 +285,7 @@ signupSubmit.onclick = async () => {
     const res = await fetch('/api/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password, confirmPassword })
+      body: JSON.stringify({ username, email, phoneNumber, password, confirmPassword })
     });
     const data = await res.json();
     if (res.ok) {
