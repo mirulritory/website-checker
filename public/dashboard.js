@@ -245,7 +245,9 @@ function connectWebSocket() {
     ws.close();
   }
 
-  ws = new WebSocket(`ws://${window.location.host}`);
+  // Use WSS for HTTPS sites, WS for HTTP sites
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${protocol}://${window.location.host}`);
 
   ws.onopen = () => {
     console.log('Dashboard WebSocket connection established from dashboard.html');
