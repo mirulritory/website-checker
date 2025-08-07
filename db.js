@@ -428,20 +428,32 @@ module.exports = {
         continue;
       }
       
+      // Parse the maintenance times as local time (since they're stored without timezone)
       const startTime = new Date(downtime.start_time);
       const endTime = new Date(downtime.end_time);
+      
+      // Validate the dates
+      if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+        console.log(`⚠️ Invalid date format for maintenance ID ${downtime.id}`);
+        continue;
+      }
+      
+      // Convert checkTime to local time for comparison (since planned_downtime times are local)
+      // The checkTime might have timezone info, so we need to convert it to local time
+      const checkTimeLocal = new Date(checkTime.getTime() - (checkTime.getTimezoneOffset() * 60000));
       
       console.log(`\n--- Checking Maintenance ID ${downtime.id} (${downtime.status}) ---`);
       console.log(`Start time (DB): ${downtime.start_time}`);
       console.log(`End time (DB): ${downtime.end_time}`);
       console.log(`Start time (parsed): ${startTime.toISOString()}`);
       console.log(`End time (parsed): ${endTime.toISOString()}`);
-      console.log(`Check time: ${checkTime.toISOString()}`);
-      console.log(`Is within range: ${checkTime >= startTime && checkTime <= endTime}`);
-      console.log(`Check time >= startTime: ${checkTime >= startTime}`);
-      console.log(`Check time <= endTime: ${checkTime <= endTime}`);
+      console.log(`Check time (original): ${checkTime.toISOString()}`);
+      console.log(`Check time (local): ${checkTimeLocal.toISOString()}`);
+      console.log(`Is within range: ${checkTimeLocal >= startTime && checkTimeLocal <= endTime}`);
+      console.log(`Check time >= startTime: ${checkTimeLocal >= startTime}`);
+      console.log(`Check time <= endTime: ${checkTimeLocal <= endTime}`);
       
-      if (checkTime >= startTime && checkTime <= endTime) {
+      if (checkTimeLocal >= startTime && checkTimeLocal <= endTime) {
         console.log(`✅ FOUND MAINTENANCE AT TIME:`, downtime);
         return downtime;
       }
