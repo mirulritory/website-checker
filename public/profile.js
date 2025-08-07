@@ -291,7 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Convert UTC times to local timezone for display and comparison
-            // Since the times are stored as UTC, we need to add 8 hours to convert to Malaysia time (GMT+8)
+            // Since the times are stored as UTC, we need to convert them to local timezone
+            // The current time is already in local timezone, so we need to convert maintenance times to match
             const localStartTime = new Date(startTime.getTime() + (8 * 60 * 60 * 1000));
             const localEndTime = new Date(endTime.getTime() + (8 * 60 * 60 * 1000));
             
@@ -321,7 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 now: now.toISOString(),
                 status: status,
                 isActive: now >= localStartTime && now <= localEndTime,
-                isCompleted: now > localEndTime
+                isCompleted: now > localEndTime,
+                timeDiff: now.getTime() - localStartTime.getTime()
             });
 
             // Format the times for display
