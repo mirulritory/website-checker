@@ -486,9 +486,38 @@ server.listen(PORT, async () => {
         const activeUsers = new Set([...wss.clients].map(client => client.userId).filter(id => id));
         console.log(`Server Status - Active connections: ${activeConnections}, Active users: ${activeUsers.size} (${[...activeUsers].join(', ')})`);
     }, 30000);
+    
+    // Start monitoring for all users
+    console.log('🚀 Starting monitoring for all users...');
+    try {
+        await restartAllMonitoring();
+    } catch (error) {
+        console.error('Failed to start monitoring:', error.message);
+    }
 });
 
 module.exports = WebsiteStatusAgent;
+
+// Function to restart all monitoring agents (useful for picking up code changes)
+async function restartAllMonitoring() {
+    console.log('🔄 Restarting all monitoring agents...');
+    
+    // Stop all existing agents
+    for (const [userId, userAgents] of activeAgents) {
+        userAgents.forEach(agent => agent.stop());
+    }
+    activeAgents.clear();
+    lastStatusMap.clear();
+    
+    // Get all users with active monitors and restart them
+    const allUsers = await db.query('SELECT DISTINCT user_id FROM agent_monitor_logs WHERE status = \'active\'');
+    
+    for (const user of allUsers.rows) {
+        await startUserMonitoring(user.user_id);
+    }
+    
+    console.log(`✅ Restarted monitoring for ${allUsers.rows.length} users`);
+}
 
 // Function to test if bot can access the chat
 async function testTelegramChatAccess() {
