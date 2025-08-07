@@ -307,11 +307,10 @@ module.exports = {
   getActivePlannedDowntime: async (url) => {
     console.log(`\n=== CHECKING PLANNED DOWNTIME FOR URL: ${url} ===`);
     
-    // Use UTC time for consistent comparison
+    // Use local time for consistent comparison (since maintenance times are stored in local time)
     const now = new Date();
-    const nowUTC = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
     console.log(`Current local time:`, now.toISOString());
-    console.log(`Current UTC time:`, nowUTC.toISOString());
+    console.log(`Current local time (local):`, now.toString());
     
     // First, let's see ALL planned downtime for this URL to debug
     const allDowntime = await pool.query(
@@ -323,19 +322,15 @@ module.exports = {
     
     console.log(`All scheduled downtime for ${url}:`, allDowntime.rows);
     
-    // Check each maintenance record individually using UTC time
+    // Check each maintenance record individually using local time
     for (const downtime of allDowntime.rows) {
-      // Parse the times and convert to UTC for comparison
+      // Parse the times as local time (since they're stored in local time)
       let startTime, endTime;
       
       try {
-        // Parse the local times and convert to UTC
-        const startTimeLocal = new Date(downtime.start_time);
-        const endTimeLocal = new Date(downtime.end_time);
-        
-        // Convert to UTC by adjusting for timezone offset
-        startTime = new Date(startTimeLocal.getTime() - (startTimeLocal.getTimezoneOffset() * 60000));
-        endTime = new Date(endTimeLocal.getTime() - (endTimeLocal.getTimezoneOffset() * 60000));
+        // Parse the times directly as local time
+        startTime = new Date(downtime.start_time);
+        endTime = new Date(downtime.end_time);
         
         // Validate the dates
         if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
@@ -343,14 +338,14 @@ module.exports = {
           continue;
         }
         
-        const isActive = nowUTC >= startTime && nowUTC <= endTime;
+        const isActive = now >= startTime && now <= endTime;
         
         console.log(`\n--- Maintenance ID ${downtime.id} ---`);
         console.log(`Start time (DB): ${downtime.start_time}`);
         console.log(`End time (DB): ${downtime.end_time}`);
-        console.log(`Start time (UTC): ${startTime.toISOString()}`);
-        console.log(`End time (UTC): ${endTime.toISOString()}`);
-        console.log(`Current time (UTC): ${nowUTC.toISOString()}`);
+        console.log(`Start time (parsed): ${startTime.toISOString()}`);
+        console.log(`End time (parsed): ${endTime.toISOString()}`);
+        console.log(`Current time: ${now.toISOString()}`);
         console.log(`Is active: ${isActive}`);
         console.log(`Reason: ${downtime.reason}`);
         
@@ -371,7 +366,6 @@ module.exports = {
   getPlannedDowntimeAtTime: async (url, timestamp) => {
     // Convert timestamp to Date object if it's a string
     const checkTime = timestamp instanceof Date ? timestamp : new Date(timestamp);
-    const checkTimeUTC = new Date(checkTime.getTime() - (checkTime.getTimezoneOffset() * 60000));
     
     const res = await pool.query(
       `SELECT * FROM planned_downtime 
@@ -381,16 +375,12 @@ module.exports = {
       [url]
     );
     
-    // Check each maintenance record using UTC time comparison
+    // Check each maintenance record using local time comparison
     for (const downtime of res.rows) {
-      const startTimeLocal = new Date(downtime.start_time);
-      const endTimeLocal = new Date(downtime.end_time);
+      const startTime = new Date(downtime.start_time);
+      const endTime = new Date(downtime.end_time);
       
-      // Convert to UTC
-      const startTime = new Date(startTimeLocal.getTime() - (startTimeLocal.getTimezoneOffset() * 60000));
-      const endTime = new Date(endTimeLocal.getTime() - (endTimeLocal.getTimezoneOffset() * 60000));
-      
-      if (checkTimeUTC >= startTime && checkTimeUTC <= endTime) {
+      if (checkTime >= startTime && checkTime <= endTime) {
         return downtime;
       }
     }
