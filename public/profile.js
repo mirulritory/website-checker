@@ -28,11 +28,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function isAuthenticated() {
         const token = localStorage.getItem('token');
         if (!token) return false;
-        
+
         try {
             const payload = parseJwt(token);
             if (!payload) return false;
-            
+
             // Check if token is expired
             const currentTime = Date.now() / 1000;
             if (payload.exp && payload.exp < currentTime) {
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.removeItem('token');
                 return false;
             }
-            
+
             return true;
         } catch (error) {
             console.log('Invalid token, removing from localStorage');
@@ -61,46 +61,46 @@ document.addEventListener('DOMContentLoaded', () => {
     function validateURL(url) {
         // Remove leading/trailing whitespace
         url = url.trim();
-        
+
         // Check if URL is empty
         if (!url) {
             return { isValid: false, error: 'Please enter a URL.' };
         }
-        
+
         // Check if URL starts with http:// or https://
         if (!url.match(/^https?:\/\//i)) {
             return { isValid: false, error: 'URL must start with http:// or https://' };
         }
-        
+
         // Check if URL has a valid domain structure
         try {
             const urlObj = new URL(url);
-            
+
             // Check if hostname is valid (not empty and has at least one dot)
             if (!urlObj.hostname || urlObj.hostname.length === 0) {
                 return { isValid: false, error: 'Invalid URL: missing hostname' };
             }
-            
+
             // Check if hostname has at least one dot (for domain)
             if (!urlObj.hostname.includes('.')) {
                 return { isValid: false, error: 'Invalid URL: hostname must contain a domain (e.g., example.com)' };
             }
-            
+
             // Check if hostname doesn't start or end with a dot
             if (urlObj.hostname.startsWith('.') || urlObj.hostname.endsWith('.')) {
                 return { isValid: false, error: 'Invalid URL: hostname cannot start or end with a dot' };
             }
-            
+
             // Check if hostname has valid characters
             if (!urlObj.hostname.match(/^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/)) {
                 return { isValid: false, error: 'Invalid URL: hostname contains invalid characters' };
             }
-            
+
             // Check if URL is not too long (reasonable limit)
             if (url.length > 2048) {
                 return { isValid: false, error: 'URL is too long (maximum 2048 characters)' };
             }
-            
+
             return { isValid: true, url: url };
         } catch (error) {
             return { isValid: false, error: 'Invalid URL format' };
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
                 }
             });
-            
+
             if (response.ok) {
                 const profile = await response.json();
                 displayProfile(profile);
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
                 }
             });
-            
+
             if (response.ok) {
                 const websites = await response.json();
                 displayWebsites(websites);
@@ -220,15 +220,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="remove-website-btn" data-url="${website.url}">Remove</button>
                 </div>
             `;
-            
+
             // Add action functionality
             const addActionBtn = listItem.querySelector('.add-action-btn');
             addActionBtn.addEventListener('click', () => showPlannedDowntimeModal(website.url));
-            
+
             // Add remove functionality
             const removeBtn = listItem.querySelector('.remove-website-btn');
             removeBtn.addEventListener('click', () => removeWebsite(website.url));
-            
+
             websitesList.appendChild(listItem);
         });
 
@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Authorization': 'Bearer ' + localStorage.getItem('token')
                 }
             });
-            
+
             if (response.ok) {
                 const maintenanceList = await response.json();
                 displayScheduledMaintenance(maintenanceList);
@@ -269,16 +269,16 @@ document.addEventListener('DOMContentLoaded', () => {
         maintenanceList.forEach(maintenance => {
             const maintenanceItem = document.createElement('div');
             maintenanceItem.className = 'maintenance-item';
-            
+
             // The times from database are in UTC, we need to display them in local time
             // PostgreSQL returns UTC timestamps, so we need to parse them correctly
-            const startTime = new Date(maintenance.start_time + 'Z'); // Force UTC interpretation
-            const endTime = new Date(maintenance.end_time + 'Z'); // Force UTC interpretation
+            const startTime = new Date(maintenance.start_time);
+            const endTime = new Date(maintenance.end_time); // Force UTC interpretation
             const now = new Date();
-            
+
             let status = maintenance.status;
             let statusClass = 'status-scheduled';
-            
+
             if (status === 'cancelled') {
                 statusClass = 'status-cancelled';
             } else if (now >= startTime && now <= endTime) {
@@ -288,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 status = 'completed';
                 statusClass = 'status-completed';
             }
-            
+
             maintenanceItem.innerHTML = `
                 <div class="maintenance-details">
                     <div class="maintenance-url">${maintenance.url}</div>
@@ -302,13 +302,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${status === 'scheduled' ? `<button class="cancel-maintenance-btn" data-id="${maintenance.id}">Cancel</button>` : ''}
                 </div>
             `;
-            
+
             // Add cancel functionality for scheduled maintenance
             if (status === 'scheduled') {
                 const cancelBtn = maintenanceItem.querySelector('.cancel-maintenance-btn');
                 cancelBtn.addEventListener('click', () => cancelMaintenance(maintenance.id));
             }
-            
+
             maintenanceListElement.appendChild(maintenanceItem);
         });
 
@@ -347,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add website functionality
     addBtn.addEventListener('click', async () => {
         const url = websiteUrlInput.value.trim();
-        
+
         const validationResult = validateURL(url);
         if (!validationResult.isValid) {
             modalError.textContent = validationResult.error;
@@ -408,13 +408,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Real-time URL validation
     websiteUrlInput.addEventListener('input', () => {
         const url = websiteUrlInput.value.trim();
-        
+
         // Clear previous validation messages if input is empty
         if (!url) {
             modalError.textContent = '';
             return;
         }
-        
+
         // Only validate if user has started typing a URL
         if (url.length > 0) {
             const validation = validateURL(url);
@@ -456,12 +456,12 @@ document.addEventListener('DOMContentLoaded', () => {
         plannedDowntimeModal.style.display = 'block';
         maintenanceReason.focus();
         plannedDowntimeError.textContent = '';
-        
+
         // Set default start time to current time + 1 hour
         const now = new Date();
         now.setHours(now.getHours() + 1);
         startDateTime.value = now.toISOString().slice(0, 16);
-        
+
         // Set default end time to start time + 2 hours
         const endTime = new Date(now);
         endTime.setHours(endTime.getHours() + 2);
