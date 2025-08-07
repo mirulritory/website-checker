@@ -275,22 +275,58 @@ module.exports = {
   // Create planned_downtime table if it doesn't exist
   createPlannedDowntimeTable: async () => {
     try {
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS planned_downtime (
-          id SERIAL PRIMARY KEY,
-          user_id INTEGER NOT NULL,
-          url TEXT NOT NULL,
-          reason TEXT NOT NULL,
-          start_time TIMESTAMP NOT NULL,
-          end_time TIMESTAMP NOT NULL,
-          status TEXT DEFAULT 'scheduled',
-          created_at TIMESTAMP DEFAULT NOW(),
-          FOREIGN KEY (user_id) REFERENCES users(user_id)
-        )
+      // First, check if the table exists
+      const tableExists = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'planned_downtime'
+        );
       `);
-      console.log('Planned downtime table created or already exists');
+
+      if (tableExists.rows[0].exists) {
+        // Table exists, check if created_at column needs timezone conversion
+        console.log('Planned downtime table exists, checking timezone...');
+        
+        // Check if there are any UTC timestamps in created_at (older than timezone change)
+        const utcCheck = await pool.query(`
+          SELECT COUNT(*) as count 
+          FROM planned_downtime 
+          WHERE created_at < '2025-01-01' 
+          OR created_at::text LIKE '%+00%'
+        `);
+        
+        if (utcCheck.rows[0].count > 0) {
+          console.log(`Found ${utcCheck.rows[0].count} records with UTC timestamps, converting to local timezone...`);
+          
+          // Convert existing UTC timestamps to local timezone
+          await pool.query(`
+            UPDATE planned_downtime 
+            SET created_at = created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kuala_Lumpur'
+            WHERE created_at < '2025-01-01' 
+            OR created_at::text LIKE '%+00%'
+          `);
+          
+          console.log('✅ Converted existing UTC timestamps to local timezone');
+        }
+      } else {
+        // Create new table with local timezone
+        await pool.query(`
+          CREATE TABLE planned_downtime (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            url TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            start_time TIMESTAMP NOT NULL,
+            end_time TIMESTAMP NOT NULL,
+            status TEXT DEFAULT 'scheduled',
+            created_at TIMESTAMP DEFAULT NOW(),
+            FOREIGN KEY (user_id) REFERENCES users(user_id)
+          )
+        `);
+        console.log('✅ Planned downtime table created with local timezone');
+      }
     } catch (err) {
-      console.log('Error creating planned_downtime table:', err.message);
+      console.log('Error creating/updating planned_downtime table:', err.message);
     }
   },
   // Add planned downtime
@@ -428,5 +464,30 @@ module.exports = {
       LIMIT 5
     `);
     return res.rows;
+  },
+  // Convert existing UTC timestamps to local timezone (run once after timezone change)
+  convertPlannedDowntimeTimezones: async () => {
+    try {
+      console.log('🔄 Converting planned_downtime timestamps to local timezone...');
+      
+      // Convert created_at timestamps from UTC to local timezone
+      const result = await pool.query(`
+        UPDATE planned_downtime 
+        SET created_at = created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kuala_Lumpur'
+        WHERE created_at::text LIKE '%+00%'
+        RETURNING id, created_at
+      `);
+      
+      if (result.rows.length > 0) {
+        console.log(`✅ Converted ${result.rows.length} planned_downtime records to local timezone`);
+        result.rows.forEach(row => {
+          console.log(`  - ID ${row.id}: ${row.created_at}`);
+        });
+      } else {
+        console.log('ℹ️ No UTC timestamps found to convert');
+      }
+    } catch (err) {
+      console.log('Error converting planned_downtime timezones:', err.message);
+    }
   }
 }; 

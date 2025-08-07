@@ -448,6 +448,7 @@ server.listen(PORT, async () => {
         await db.createApplicationOwnerTable();
         await db.addUrlUniqueConstraint();
         await db.createPlannedDowntimeTable();
+        await db.convertPlannedDowntimeTimezones(); // Convert existing UTC timestamps to local timezone
     } catch (err) {
         console.log('Error initializing database schema:', err.message);
     }
