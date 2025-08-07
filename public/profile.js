@@ -290,6 +290,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 endTime = new Date();
             }
             
+            // Convert UTC times to local timezone for display
+            // Since the times are stored as UTC, we need to add 8 hours to convert to Malaysia time (GMT+8)
+            const localStartTime = new Date(startTime.getTime() + (8 * 60 * 60 * 1000));
+            const localEndTime = new Date(endTime.getTime() + (8 * 60 * 60 * 1000));
+            
             const now = new Date();
 
             let status = maintenance.status;
@@ -297,18 +302,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (status === 'cancelled') {
                 statusClass = 'status-cancelled';
-            } else if (now >= startTime && now <= endTime) {
+            } else if (now >= localStartTime && now <= localEndTime) {
                 status = 'active';
                 statusClass = 'status-active';
-            } else if (now > endTime) {
+            } else if (now > localEndTime) {
                 status = 'completed';
                 statusClass = 'status-completed';
             }
-
-            // Convert UTC times to local timezone for display
-            // Since the times are stored as UTC, we need to add 8 hours to convert to Malaysia time (GMT+8)
-            const localStartTime = new Date(startTime.getTime() + (8 * 60 * 60 * 1000));
-            const localEndTime = new Date(endTime.getTime() + (8 * 60 * 60 * 1000));
             
             // Format the times for display
             const formatLocalTime = (date) => {
