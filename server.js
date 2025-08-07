@@ -185,16 +185,15 @@ app.get('/api/history', authenticateToken, async (req, res) => {
         
         // Enhance logs with planned downtime info
         const enhancedLogs = await Promise.all(logs.map(async log => {
-            if (log.status === 'offline') {
-                const downtime = await db.getPlannedDowntimeAtTime(log.url, log.timestamp);
-                
-                if (downtime) {
-                    return {
-                        ...log,
-                        status: 'maintenance',
-                        error_message: downtime.reason
-                    };
-                }
+            // Check for planned downtime regardless of current status
+            const downtime = await db.getPlannedDowntimeAtTime(log.url, log.timestamp);
+            
+            if (downtime) {
+                return {
+                    ...log,
+                    status: 'maintenance',
+                    error_message: downtime.reason
+                };
             }
             return log;
         }));

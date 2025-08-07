@@ -347,6 +347,7 @@ module.exports = {
     const now = new Date();
     console.log(`Current local time:`, now.toISOString());
     console.log(`Current local time (local):`, now.toString());
+    console.log(`Current time (local timezone):`, now.toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }));
     
     // First, let's see ALL planned downtime for this URL to debug
     const allDowntime = await pool.query(
@@ -381,7 +382,10 @@ module.exports = {
         console.log(`End time (DB): ${downtime.end_time}`);
         console.log(`Start time (parsed): ${startTime.toISOString()}`);
         console.log(`End time (parsed): ${endTime.toISOString()}`);
+        console.log(`Start time (local): ${startTime.toString()}`);
+        console.log(`End time (local): ${endTime.toString()}`);
         console.log(`Current time: ${now.toISOString()}`);
+        console.log(`Current time (local): ${now.toString()}`);
         console.log(`Is active: ${isActive}`);
         console.log(`Reason: ${downtime.reason}`);
         
@@ -402,6 +406,9 @@ module.exports = {
   getPlannedDowntimeAtTime: async (url, timestamp) => {
     // Convert timestamp to Date object if it's a string
     const checkTime = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    console.log(`\n=== CHECKING PLANNED DOWNTIME AT TIME FOR URL: ${url} ===`);
+    console.log(`Check time: ${checkTime.toISOString()}`);
+    console.log(`Check time (local): ${checkTime.toString()}`);
     
     const res = await pool.query(
       `SELECT * FROM planned_downtime 
@@ -411,16 +418,28 @@ module.exports = {
       [url]
     );
     
+    console.log(`Found ${res.rows.length} scheduled downtime records for ${url}`);
+    
     // Check each maintenance record using local time comparison
     for (const downtime of res.rows) {
       const startTime = new Date(downtime.start_time);
       const endTime = new Date(downtime.end_time);
       
+      console.log(`\n--- Checking Maintenance ID ${downtime.id} ---`);
+      console.log(`Start time (DB): ${downtime.start_time}`);
+      console.log(`End time (DB): ${downtime.end_time}`);
+      console.log(`Start time (parsed): ${startTime.toISOString()}`);
+      console.log(`End time (parsed): ${endTime.toISOString()}`);
+      console.log(`Check time: ${checkTime.toISOString()}`);
+      console.log(`Is within range: ${checkTime >= startTime && checkTime <= endTime}`);
+      
       if (checkTime >= startTime && checkTime <= endTime) {
+        console.log(`✅ FOUND MAINTENANCE AT TIME:`, downtime);
         return downtime;
       }
     }
     
+    console.log(`❌ No maintenance found at time for ${url}`);
     return null;
   },
 
