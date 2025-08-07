@@ -363,7 +363,16 @@ module.exports = {
   // Get user's planned downtime
   getUserPlannedDowntime: async (user_id) => {
     const res = await pool.query(
-      `SELECT * FROM planned_downtime 
+      `SELECT 
+        id,
+        user_id,
+        url,
+        reason,
+        start_time::text as start_time,
+        end_time::text as end_time,
+        status,
+        created_at
+       FROM planned_downtime 
        WHERE user_id = $1 
        ORDER BY start_time DESC`,
       [user_id]
