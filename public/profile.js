@@ -274,10 +274,60 @@ document.addEventListener('DOMContentLoaded', () => {
             // PostgreSQL returns them as strings like "2025-08-07 21:53:00"
             // These are UTC times, but JavaScript interprets them as local time
             // We need to convert them properly to local time by treating them as UTC
-            const startTimeStr = maintenance.start_time.replace(' ', 'T') + '.000Z';
-            const endTimeStr = maintenance.end_time.replace(' ', 'T') + '.000Z';
-            const startTime = new Date(startTimeStr);
-            const endTime = new Date(endTimeStr);
+            let startTime, endTime;
+            
+            try {
+                // Method 1: Try to parse as ISO string with UTC suffix
+                const startTimeStr = maintenance.start_time.replace(' ', 'T') + '.000Z';
+                const endTimeStr = maintenance.end_time.replace(' ', 'T') + '.000Z';
+                startTime = new Date(startTimeStr);
+                endTime = new Date(endTimeStr);
+                
+                // Check if parsing was successful
+                if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+                    throw new Error('Invalid date format');
+                }
+            } catch (error) {
+                try {
+                    // Method 2: Try parsing with explicit UTC interpretation
+                    startTime = new Date(maintenance.start_time + ' UTC');
+                    endTime = new Date(maintenance.end_time + ' UTC');
+                    
+                    // Check if parsing was successful
+                    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+                        throw new Error('Invalid date format');
+                    }
+                } catch (error2) {
+                    try {
+                        // Method 3: Manual parsing as last resort
+                        const startParts = maintenance.start_time.split(' ');
+                        const endParts = maintenance.end_time.split(' ');
+                        
+                        if (startParts.length === 2 && endParts.length === 2) {
+                            const startDate = startParts[0];
+                            const startTimeOnly = startParts[1];
+                            const endDate = endParts[0];
+                            const endTimeOnly = endParts[1];
+                            
+                            startTime = new Date(startDate + 'T' + startTimeOnly + 'Z');
+                            endTime = new Date(endDate + 'T' + endTimeOnly + 'Z');
+                            
+                            // Check if parsing was successful
+                            if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+                                throw new Error('Invalid date format');
+                            }
+                        } else {
+                            throw new Error('Invalid date format');
+                        }
+                    } catch (error3) {
+                        // Fallback: Use current time and log error
+                        console.error('Failed to parse maintenance times:', maintenance.start_time, maintenance.end_time);
+                        startTime = new Date();
+                        endTime = new Date();
+                    }
+                }
+            }
+            
             const now = new Date();
 
             let status = maintenance.status;
