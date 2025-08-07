@@ -349,15 +349,15 @@ module.exports = {
     console.log(`Current local time (local):`, now.toString());
     console.log(`Current time (local timezone):`, now.toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }));
     
-    // First, let's see ALL planned downtime for this URL to debug
+    // First, let's see ALL planned downtime for this URL to debug (including completed)
     const allDowntime = await pool.query(
       `SELECT * FROM planned_downtime 
-        WHERE url = $1 AND status = 'scheduled'
+        WHERE url = $1 AND status IN ('scheduled', 'completed')
         ORDER BY start_time DESC`,
       [url]
     );
     
-    console.log(`All scheduled downtime for ${url}:`, allDowntime.rows);
+    console.log(`All scheduled/completed downtime for ${url}:`, allDowntime.rows);
     
     // Check each maintenance record individually using local time
     for (const downtime of allDowntime.rows) {
@@ -377,7 +377,7 @@ module.exports = {
         
         const isActive = now >= startTime && now <= endTime;
         
-        console.log(`\n--- Maintenance ID ${downtime.id} ---`);
+        console.log(`\n--- Maintenance ID ${downtime.id} (${downtime.status}) ---`);
         console.log(`Start time (DB): ${downtime.start_time}`);
         console.log(`End time (DB): ${downtime.end_time}`);
         console.log(`Start time (parsed): ${startTime.toISOString()}`);
@@ -413,19 +413,19 @@ module.exports = {
     const res = await pool.query(
       `SELECT * FROM planned_downtime 
         WHERE url = $1 
-        AND status = 'scheduled'
+        AND status IN ('scheduled', 'completed')
         ORDER BY start_time DESC`,
       [url]
     );
     
-    console.log(`Found ${res.rows.length} scheduled downtime records for ${url}`);
+    console.log(`Found ${res.rows.length} scheduled/completed downtime records for ${url}`);
     
     // Check each maintenance record using local time comparison
     for (const downtime of res.rows) {
       const startTime = new Date(downtime.start_time);
       const endTime = new Date(downtime.end_time);
       
-      console.log(`\n--- Checking Maintenance ID ${downtime.id} ---`);
+      console.log(`\n--- Checking Maintenance ID ${downtime.id} (${downtime.status}) ---`);
       console.log(`Start time (DB): ${downtime.start_time}`);
       console.log(`End time (DB): ${downtime.end_time}`);
       console.log(`Start time (parsed): ${startTime.toISOString()}`);
