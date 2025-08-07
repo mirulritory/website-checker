@@ -305,11 +305,12 @@ module.exports = {
   },
   // Get active planned downtime for a URL
   getActivePlannedDowntime: async (url) => {
-    console.log(`\nChecking planned downtime for URL: ${url}`);
+    console.log(`\n=== CHECKING PLANNED DOWNTIME FOR URL: ${url} ===`);
     
     // Use local timezone instead of database server time
     const now = new Date();
-    console.log(`Current local time:`, now);
+    console.log(`Current local time:`, now.toISOString());
+    console.log(`Current local time (local):`, now.toString());
     
     // First, let's see ALL planned downtime for this URL to debug
     const allDowntime = await pool.query(
@@ -323,18 +324,51 @@ module.exports = {
     
     // Check each maintenance record individually using local time
     for (const downtime of allDowntime.rows) {
-      const startTime = new Date(downtime.start_time);
-      const endTime = new Date(downtime.end_time);
-      const isActive = now >= startTime && now <= endTime;
-      console.log(`Maintenance ID ${downtime.id}: ${downtime.start_time} to ${downtime.end_time} - Active: ${isActive}`);
+      // Parse the times as local time (since we're storing them as local time)
+      let startTime, endTime;
       
-      if (isActive) {
-        console.log(`Found active maintenance:`, downtime);
-        return downtime;
+      try {
+        // Handle different possible formats
+        if (typeof downtime.start_time === 'string') {
+          startTime = new Date(downtime.start_time);
+        } else {
+          startTime = new Date(downtime.start_time);
+        }
+        
+        if (typeof downtime.end_time === 'string') {
+          endTime = new Date(downtime.end_time);
+        } else {
+          endTime = new Date(downtime.end_time);
+        }
+        
+        // Validate the dates
+        if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+          console.log(`⚠️ Invalid date format for maintenance ID ${downtime.id}`);
+          continue;
+        }
+        
+        const isActive = now >= startTime && now <= endTime;
+        
+        console.log(`\n--- Maintenance ID ${downtime.id} ---`);
+        console.log(`Start time (DB): ${downtime.start_time}`);
+        console.log(`End time (DB): ${downtime.end_time}`);
+        console.log(`Start time (parsed): ${startTime.toISOString()}`);
+        console.log(`End time (parsed): ${endTime.toISOString()}`);
+        console.log(`Current time: ${now.toISOString()}`);
+        console.log(`Is active: ${isActive}`);
+        console.log(`Reason: ${downtime.reason}`);
+        
+        if (isActive) {
+          console.log(`✅ FOUND ACTIVE MAINTENANCE:`, downtime);
+          return downtime;
+        }
+      } catch (error) {
+        console.log(`⚠️ Error parsing dates for maintenance ID ${downtime.id}:`, error.message);
+        continue;
       }
     }
     
-    console.log(`No active downtime found for ${url}`);
+    console.log(`❌ No active downtime found for ${url}`);
     return null;
   },
 
