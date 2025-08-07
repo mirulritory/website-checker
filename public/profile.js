@@ -271,11 +271,11 @@ document.addEventListener('DOMContentLoaded', () => {
             maintenanceItem.className = 'maintenance-item';
 
             // The times from database are stored as UTC
-            // We need to convert them to local time for display
+            // We need to convert them to local time (Asia/Kuala_Lumpur) for display
             let startTime, endTime;
             
             try {
-                // Parse the UTC timestamps and convert to local time
+                // Parse the UTC timestamps
                 startTime = new Date(maintenance.start_time);
                 endTime = new Date(maintenance.end_time);
                 
@@ -305,12 +305,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusClass = 'status-completed';
             }
 
+            // Convert UTC times to local timezone for display
+            const localStartTime = startTime.toLocaleString('en-US', { 
+                timeZone: 'Asia/Kuala_Lumpur',
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+            
+            const localEndTime = endTime.toLocaleString('en-US', { 
+                timeZone: 'Asia/Kuala_Lumpur',
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+
             maintenanceItem.innerHTML = `
                 <div class="maintenance-details">
                     <div class="maintenance-url">${maintenance.url}</div>
                     <div class="maintenance-reason">${maintenance.reason}</div>
                     <div class="maintenance-time">
-                        ${startTime.toLocaleString()} - ${endTime.toLocaleString()}
+                        ${localStartTime} - ${localEndTime}
                     </div>
                 </div>
                 <div>
