@@ -294,20 +294,16 @@ app.post('/api/planned-downtime', authenticateToken, async (req, res) => {
         }
 
         // The frontend sends local time as datetime-local format (YYYY-MM-DDTHH:MM)
-        // We need to convert this to UTC properly
-        const startTimeLocal = new Date(start_time + ':00');
-        const endTimeLocal = new Date(end_time + ':00');
-        
-        // Convert to UTC by adjusting for timezone offset
-        const startTimeUTC = new Date(startTimeLocal.getTime() - (startTimeLocal.getTimezoneOffset() * 60000));
-        const endTimeUTC = new Date(endTimeLocal.getTime() - (endTimeLocal.getTimezoneOffset() * 60000));
+        // Store the times directly as local time (no UTC conversion needed)
+        const startTime = new Date(start_time + ':00');
+        const endTime = new Date(end_time + ':00');
         
         const downtime = await db.addPlannedDowntime(
             req.user.user_id,
             url,
             reason,
-            startTimeUTC,
-            endTimeUTC
+            startTime,
+            endTime
         );
 
         res.json(downtime);

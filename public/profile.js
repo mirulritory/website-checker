@@ -270,19 +270,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const maintenanceItem = document.createElement('div');
             maintenanceItem.className = 'maintenance-item';
 
-            // The times from database are stored in UTC format (YYYY-MM-DD HH:MM:SS)
+            // The times from database are stored in local timezone (YYYY-MM-DD HH:MM:SS)
             // PostgreSQL returns them as strings like "2025-08-07 22:06:00"
-            // These are UTC times, so we need to parse them as UTC and convert to local time
+            // These are already in local time, so just parse them directly
             let startTime, endTime;
             
             try {
-                // Parse the UTC timestamps correctly
-                // Format: "2025-08-07 22:06:00" -> "2025-08-07T22:06:00.000Z"
-                const startTimeStr = maintenance.start_time.replace(' ', 'T') + '.000Z';
-                const endTimeStr = maintenance.end_time.replace(' ', 'T') + '.000Z';
-                
-                startTime = new Date(startTimeStr);
-                endTime = new Date(endTimeStr);
+                // Parse the local timestamps directly (no UTC conversion needed)
+                startTime = new Date(maintenance.start_time);
+                endTime = new Date(maintenance.end_time);
                 
                 // Validate the dates
                 if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
