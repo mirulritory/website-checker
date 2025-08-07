@@ -343,11 +343,10 @@ module.exports = {
   getActivePlannedDowntime: async (url) => {
     console.log(`\n=== CHECKING PLANNED DOWNTIME FOR URL: ${url} ===`);
     
-    // Use local time for consistent comparison (since maintenance times are stored in local time)
+    // Use UTC time for consistent comparison (since maintenance times are stored as UTC)
     const now = new Date();
-    console.log(`Current local time:`, now.toISOString());
-    console.log(`Current local time (local):`, now.toString());
-    console.log(`Current time (local timezone):`, now.toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }));
+    console.log(`Current UTC time:`, now.toISOString());
+    console.log(`Current local time:`, now.toString());
     
     // First, let's see ALL planned downtime for this URL to debug (including completed)
     const allDowntime = await pool.query(
@@ -359,13 +358,13 @@ module.exports = {
     
     console.log(`All scheduled/completed downtime for ${url}:`, allDowntime.rows);
     
-    // Check each maintenance record individually using local time
+    // Check each maintenance record individually using UTC time
     for (const downtime of allDowntime.rows) {
-      // Parse the times as local time (since they're stored in local time)
+      // Parse the times as UTC (since they're stored as UTC in the database)
       let startTime, endTime;
       
       try {
-        // Parse the times directly as local time
+        // Parse the times directly as UTC
         startTime = new Date(downtime.start_time);
         endTime = new Date(downtime.end_time);
         
@@ -382,10 +381,7 @@ module.exports = {
         console.log(`End time (DB): ${downtime.end_time}`);
         console.log(`Start time (parsed): ${startTime.toISOString()}`);
         console.log(`End time (parsed): ${endTime.toISOString()}`);
-        console.log(`Start time (local): ${startTime.toString()}`);
-        console.log(`End time (local): ${endTime.toString()}`);
         console.log(`Current time: ${now.toISOString()}`);
-        console.log(`Current time (local): ${now.toString()}`);
         console.log(`Is active: ${isActive}`);
         console.log(`Reason: ${downtime.reason}`);
         console.log(`Now >= startTime: ${now >= startTime}`);
@@ -428,7 +424,7 @@ module.exports = {
         continue;
       }
       
-      // Parse the maintenance times as local time (since they're stored without timezone)
+      // Parse the maintenance times - they are stored as UTC in the database
       const startTime = new Date(downtime.start_time);
       const endTime = new Date(downtime.end_time);
       
@@ -438,22 +434,17 @@ module.exports = {
         continue;
       }
       
-      // Convert checkTime to local time for comparison (since planned_downtime times are local)
-      // The checkTime might have timezone info, so we need to convert it to local time
-      const checkTimeLocal = new Date(checkTime.getTime() - (checkTime.getTimezoneOffset() * 60000));
-      
       console.log(`\n--- Checking Maintenance ID ${downtime.id} (${downtime.status}) ---`);
       console.log(`Start time (DB): ${downtime.start_time}`);
       console.log(`End time (DB): ${downtime.end_time}`);
       console.log(`Start time (parsed): ${startTime.toISOString()}`);
       console.log(`End time (parsed): ${endTime.toISOString()}`);
-      console.log(`Check time (original): ${checkTime.toISOString()}`);
-      console.log(`Check time (local): ${checkTimeLocal.toISOString()}`);
-      console.log(`Is within range: ${checkTimeLocal >= startTime && checkTimeLocal <= endTime}`);
-      console.log(`Check time >= startTime: ${checkTimeLocal >= startTime}`);
-      console.log(`Check time <= endTime: ${checkTimeLocal <= endTime}`);
+      console.log(`Check time: ${checkTime.toISOString()}`);
+      console.log(`Is within range: ${checkTime >= startTime && checkTime <= endTime}`);
+      console.log(`Check time >= startTime: ${checkTime >= startTime}`);
+      console.log(`Check time <= endTime: ${checkTime <= endTime}`);
       
-      if (checkTimeLocal >= startTime && checkTimeLocal <= endTime) {
+      if (checkTime >= startTime && checkTime <= endTime) {
         console.log(`✅ FOUND MAINTENANCE AT TIME:`, downtime);
         return downtime;
       }

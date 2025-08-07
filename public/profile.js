@@ -270,13 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const maintenanceItem = document.createElement('div');
             maintenanceItem.className = 'maintenance-item';
 
-            // The times from database are stored in local timezone (YYYY-MM-DD HH:MM:SS)
-            // PostgreSQL returns them as strings like "2025-08-07 22:06:00"
-            // These are already in local time, so just parse them directly
+            // The times from database are stored as UTC
+            // We need to convert them to local time for display
             let startTime, endTime;
             
             try {
-                // Parse the local timestamps directly (no UTC conversion needed)
+                // Parse the UTC timestamps and convert to local time
                 startTime = new Date(maintenance.start_time);
                 endTime = new Date(maintenance.end_time);
                 
