@@ -81,7 +81,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 return { isValid: false, error: 'Invalid URL: missing hostname' };
             }
 
-            // Check if hostname has at least one dot (for domain)
+            // Special exception for localhost URLs
+            if (urlObj.hostname === 'localhost') {
+                // Allow localhost URLs without requiring a dot
+                if (url.length > 2048) {
+                    return { isValid: false, error: 'URL is too long (maximum 2048 characters)' };
+                }
+                return { isValid: true, url: url };
+            }
+
+            // Check if hostname has at least one dot (for domain) - except for localhost
             if (!urlObj.hostname.includes('.')) {
                 return { isValid: false, error: 'Invalid URL: hostname must contain a domain (e.g., example.com)' };
             }
