@@ -306,34 +306,32 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Convert UTC times to local timezone for display
-            const localStartTime = startTime.toLocaleString('en-US', { 
-                timeZone: 'Asia/Kuala_Lumpur',
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true
-            });
+            // Since the times are stored as UTC, we need to add 8 hours to convert to Malaysia time (GMT+8)
+            const localStartTime = new Date(startTime.getTime() + (8 * 60 * 60 * 1000));
+            const localEndTime = new Date(endTime.getTime() + (8 * 60 * 60 * 1000));
             
-            const localEndTime = endTime.toLocaleString('en-US', { 
-                timeZone: 'Asia/Kuala_Lumpur',
-                year: 'numeric',
-                month: 'numeric',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true
-            });
+            // Format the times for display
+            const formatLocalTime = (date) => {
+                return date.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+            };
+
+            const formattedStartTime = formatLocalTime(localStartTime);
+            const formattedEndTime = formatLocalTime(localEndTime);
 
             maintenanceItem.innerHTML = `
                 <div class="maintenance-details">
                     <div class="maintenance-url">${maintenance.url}</div>
                     <div class="maintenance-reason">${maintenance.reason}</div>
                     <div class="maintenance-time">
-                        ${localStartTime} - ${localEndTime}
+                        ${formattedStartTime} - ${formattedEndTime}
                     </div>
                 </div>
                 <div>
