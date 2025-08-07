@@ -411,22 +411,38 @@ module.exports = {
     console.log(`Check time: ${checkTime.toISOString()}`);
     console.log(`Check time (local): ${checkTime.toString()}`);
     
-    // Use the timestamp directly as it should be in the same timezone as the database
-    const res = await pool.query(
+    // First, let's see ALL maintenance records for this URL (for debugging)
+    const allMaintenance = await pool.query(
       `SELECT * FROM planned_downtime 
         WHERE url = $1 
-        AND status IN ('scheduled', 'completed')
-        AND $2 >= start_time 
-        AND $2 <= end_time
         ORDER BY start_time DESC`,
-      [url, checkTime]
+      [url]
     );
+    console.log(`All maintenance records for ${url}:`, allMaintenance.rows);
     
-    console.log(`Found ${res.rows.length} maintenance records overlapping with check time`);
-    
-    if (res.rows.length > 0) {
-      console.log(`✅ FOUND MAINTENANCE AT TIME:`, res.rows[0]);
-      return res.rows[0];
+    // Check each maintenance record individually using JavaScript comparison
+    for (const downtime of allMaintenance.rows) {
+      if (downtime.status !== 'scheduled' && downtime.status !== 'completed') {
+        continue;
+      }
+      
+      const startTime = new Date(downtime.start_time);
+      const endTime = new Date(downtime.end_time);
+      
+      console.log(`\n--- Checking Maintenance ID ${downtime.id} (${downtime.status}) ---`);
+      console.log(`Start time (DB): ${downtime.start_time}`);
+      console.log(`End time (DB): ${downtime.end_time}`);
+      console.log(`Start time (parsed): ${startTime.toISOString()}`);
+      console.log(`End time (parsed): ${endTime.toISOString()}`);
+      console.log(`Check time: ${checkTime.toISOString()}`);
+      console.log(`Is within range: ${checkTime >= startTime && checkTime <= endTime}`);
+      console.log(`Check time >= startTime: ${checkTime >= startTime}`);
+      console.log(`Check time <= endTime: ${checkTime <= endTime}`);
+      
+      if (checkTime >= startTime && checkTime <= endTime) {
+        console.log(`✅ FOUND MAINTENANCE AT TIME:`, downtime);
+        return downtime;
+      }
     }
     
     console.log(`❌ No maintenance found at time for ${url}`);
