@@ -388,6 +388,8 @@ module.exports = {
         console.log(`Current time (local): ${now.toString()}`);
         console.log(`Is active: ${isActive}`);
         console.log(`Reason: ${downtime.reason}`);
+        console.log(`Now >= startTime: ${now >= startTime}`);
+        console.log(`Now <= endTime: ${now <= endTime}`);
         
         if (isActive) {
           console.log(`✅ FOUND ACTIVE MAINTENANCE:`, downtime);
