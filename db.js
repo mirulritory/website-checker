@@ -307,10 +307,9 @@ module.exports = {
   getActivePlannedDowntime: async (url) => {
     console.log(`\nChecking planned downtime for URL: ${url}`);
     
-    // Get current time once to use consistently
-    const currentTime = await pool.query('SELECT NOW() as current_time');
-    const now = currentTime.rows[0].current_time;
-    console.log(`Current database time:`, now);
+    // Use local timezone instead of database server time
+    const now = new Date();
+    console.log(`Current local time:`, now);
     
     // First, let's see ALL planned downtime for this URL to debug
     const allDowntime = await pool.query(
@@ -322,42 +321,46 @@ module.exports = {
     
     console.log(`All scheduled downtime for ${url}:`, allDowntime.rows);
     
-    // Check each maintenance record individually
+    // Check each maintenance record individually using local time
     for (const downtime of allDowntime.rows) {
-      const isActive = await pool.query(
-        `SELECT $1 BETWEEN $2 AND $3 as is_active`,
-        [now, downtime.start_time, downtime.end_time]
-      );
-      console.log(`Maintenance ID ${downtime.id}: ${downtime.start_time} to ${downtime.end_time} - Active: ${isActive.rows[0].is_active}`);
+      const startTime = new Date(downtime.start_time);
+      const endTime = new Date(downtime.end_time);
+      const isActive = now >= startTime && now <= endTime;
+      console.log(`Maintenance ID ${downtime.id}: ${downtime.start_time} to ${downtime.end_time} - Active: ${isActive}`);
+      
+      if (isActive) {
+        console.log(`Found active maintenance:`, downtime);
+        return downtime;
+      }
     }
     
-    // Use the same timestamp for the main query
-    const res = await pool.query(
-      `SELECT * 
-        FROM planned_downtime 
-        WHERE url = $1 
-        AND status = 'scheduled'
-        AND $2 BETWEEN start_time AND end_time
-        ORDER BY start_time DESC 
-        LIMIT 1`,
-      [url, now]
-    );
-    
-    console.log(`Active downtime result:`, res.rows[0]);
-    return res.rows[0];
+    console.log(`No active downtime found for ${url}`);
+    return null;
   },
 
   getPlannedDowntimeAtTime: async (url, timestamp) => {
+    // Convert timestamp to Date object if it's a string
+    const checkTime = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    
     const res = await pool.query(
       `SELECT * FROM planned_downtime 
         WHERE url = $1 
         AND status = 'scheduled'
-        AND $2 BETWEEN start_time AND end_time
-        ORDER BY start_time DESC 
-        LIMIT 1`,
-      [url, timestamp]
+        ORDER BY start_time DESC`,
+      [url]
     );
-    return res.rows[0];
+    
+    // Check each maintenance record using local time comparison
+    for (const downtime of res.rows) {
+      const startTime = new Date(downtime.start_time);
+      const endTime = new Date(downtime.end_time);
+      
+      if (checkTime >= startTime && checkTime <= endTime) {
+        return downtime;
+      }
+    }
+    
+    return null;
   },
 
   // Get user's planned downtime
