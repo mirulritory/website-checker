@@ -291,8 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Convert UTC times to local timezone for display and comparison
-            // Since the times are stored as UTC, we need to convert them to local timezone
-            // The current time is already in local timezone, so we need to convert maintenance times to match
+            // The times from database are stored as UTC, so we need to convert them to local time
+            // for proper comparison with the current local time
             const localStartTime = new Date(startTime.getTime() + (8 * 60 * 60 * 1000));
             const localEndTime = new Date(endTime.getTime() + (8 * 60 * 60 * 1000));
             
@@ -323,7 +323,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: status,
                 isActive: now >= localStartTime && now <= localEndTime,
                 isCompleted: now > localEndTime,
-                timeDiff: now.getTime() - localStartTime.getTime()
+                timeDiff: now.getTime() - localStartTime.getTime(),
+                currentTimeLocal: now.toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }),
+                startTimeLocal: localStartTime.toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }),
+                endTimeLocal: localEndTime.toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' })
             });
 
             // Format the times for display
