@@ -270,6 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const maintenanceItem = document.createElement('div');
             maintenanceItem.className = 'maintenance-item';
             
+            // The times from database are in UTC, convert to local time for display
             const startTime = new Date(maintenance.start_time);
             const endTime = new Date(maintenance.end_time);
             const now = new Date();

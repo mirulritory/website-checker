@@ -293,9 +293,14 @@ app.post('/api/planned-downtime', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // The frontend sends local time, convert to UTC for storage
-        const startTimeUTC = new Date(start_time);
-        const endTimeUTC = new Date(end_time);
+        // The frontend sends local time as datetime-local format (YYYY-MM-DDTHH:MM)
+        // We need to convert this to UTC properly
+        const startTimeLocal = new Date(start_time + ':00');
+        const endTimeLocal = new Date(end_time + ':00');
+        
+        // Convert to UTC by adjusting for timezone offset
+        const startTimeUTC = new Date(startTimeLocal.getTime() - (startTimeLocal.getTimezoneOffset() * 60000));
+        const endTimeUTC = new Date(endTimeLocal.getTime() - (endTimeLocal.getTimezoneOffset() * 60000));
         
         const downtime = await db.addPlannedDowntime(
             req.user.user_id,
