@@ -83,9 +83,55 @@ async function startUserMonitoring(userId) {
                 // Send notification if status changes or it's the first check
                 if (lastStatus === undefined || lastStatus !== newStatus) {
                     const username = await db.getUsernameById(result.user_id); // Assumes this function exists
-                    const statusText = newStatus === 'online' ? 'The Website is Online' : 'The Website is Offline';
+                    
+                    // Enhanced status text with maintenance support
+                    let statusText;
+                    if (newStatus === 'online') {
+                        statusText = 'The Website is Online';
+                    } else if (newStatus === 'maintenance') {
+                        statusText = 'The Website is on Maintenance';
+                    } else {
+                        statusText = 'The Website is Offline';
+                    }
+                    
                     const latencyText = result.latency !== null ? `${result.latency} ms` : 'N/A';
-                    const message = `Website monitored by <b>${username}</b>\n🌐Website: ${result.url}\n🌐Status: ${statusText}\n🌐Latency: ${latencyText}`;
+                    
+                    // Build message with reason for offline/maintenance statuses
+                    let message = `Website monitored by <b>${username}</b>\n🌐Website: ${result.url}\n🌐Status: ${statusText}\n🌐Latency: ${latencyText}`;
+                    
+                    // Add reason for offline or maintenance statuses using the same format as history page
+                    if (newStatus === 'offline' || newStatus === 'maintenance') {
+                        let reasonText = '';
+                        
+                        if (newStatus === 'maintenance' && result.error_message) {
+                            reasonText = `Maintenance: ${result.error_message}`;
+                        } else if (newStatus === 'offline') {
+                            // Use the same reason format as history page
+                            if (result.response_code) {
+                                const reasons = {
+                                    400: '[Bad Request] The request was invalid or cannot be served.',
+                                    401: '[Unauthorized] Authentication is required to access this resource.',
+                                    403: '[Forbidden] The request was forbidden due to insufficient permissions.',
+                                    404: '[Not Found] The requested resource was not found.',
+                                    408: '[Request Timeout] The server timed out waiting for the request.',
+                                    429: '[Too Many Requests] The client has sent too many requests in a given amount of time.',
+                                    500: '[Internal Server Error] The server encountered an unexpected condition that prevented it from fulfilling the request.',
+                                    502: '[Bad Gateway] The server received an invalid response from an upstream server while trying to fulfill the request.',
+                                    503: '[Service Unavailable] The server is currently unavailable due to maintenance or overloading.',
+                                    504: '[Gateway Timeout] The server was acting as a gateway or proxy and did not receive a timely response from the upstream server.',
+                                };
+                                reasonText = reasons[result.response_code] || `HTTP ${result.response_code}`;
+                            } else if (result.error_message) {
+                                reasonText = result.error_message;
+                            } else {
+                                reasonText = 'Connection failed';
+                            }
+                        }
+                        
+                        if (reasonText) {
+                            message += `\n🌐Reason: ${reasonText}`;
+                        }
+                    }
                     
                     // Send Telegram notification with error handling
                     try {
@@ -189,11 +235,11 @@ app.get('/api/history', authenticateToken, async (req, res) => {
             const downtime = await db.getPlannedDowntimeAtTime(log.url, log.timestamp);
             
             if (downtime) {
-                return {
-                    ...log,
-                    status: 'maintenance',
+                    return {
+                        ...log,
+                        status: 'maintenance',
                     error_message: downtime.reason
-                };
+                    };
             }
             return log;
         }));
@@ -671,14 +717,14 @@ async function sendTelegramNotification(message, retries = 3) {
       
       // Create the fetch promise
       const fetchPromise = fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: message,
-          parse_mode: 'HTML'
-        })
-      });
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'HTML'
+    })
+  });
       
       // Race between fetch and timeout
       const res = await Promise.race([fetchPromise, timeoutPromise]);

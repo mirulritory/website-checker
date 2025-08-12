@@ -116,9 +116,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const latencyEl = document.getElementById(`latency-${btoa(monitor.url)}`);
 
         if (statusEl && latencyEl) {
-            statusEl.textContent = monitor.status === 'online' ? 'Online' : 'Offline';
-            statusEl.style.color = monitor.status === 'online' ? '#00b518' : '#ff3333';
-            latencyEl.textContent = monitor.status === 'online' ? `${monitor.latency} ms` : 'N/A';
+                    let statusText, statusColor;
+        if (monitor.status === 'online') {
+            statusText = 'Online';
+            statusColor = '#00b518';
+        } else if (monitor.status === 'maintenance') {
+            statusText = 'Maintenance';
+            statusColor = '#ff8c00'; // Orange color for maintenance
+        } else {
+            statusText = 'Offline';
+            statusColor = '#ff3333';
+        }
+        
+        statusEl.textContent = statusText;
+        statusEl.style.color = statusColor;
+        latencyEl.textContent = monitor.status === 'online' ? `${monitor.latency} ms` : 'N/A';
         }
     }
 

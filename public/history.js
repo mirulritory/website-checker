@@ -314,8 +314,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderLatencyChart() {
         if (!currentUrl) return;
 
-        // Only use logs with status 'online' or 'offline'
-        const logs = allLogs.filter(log => log.url === currentUrl && (log.status === 'online' || log.status === 'offline'));
+            // Only use logs with status 'online', 'offline', or 'maintenance'
+    const logs = allLogs.filter(log => log.url === currentUrl && (log.status === 'online' || log.status === 'offline' || log.status === 'maintenance'));
         const view = timePeriodSelect.value;
 
         let labels = [];

@@ -532,6 +532,12 @@ body:has(.container.monitor-container) .container.monitor-container {
   border: 1px solid #f5c6cb;
 }
 
+.status-maintenance {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
 /* Announcement notifications */
 .announcement {
   position: fixed;

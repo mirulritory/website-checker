@@ -187,7 +187,14 @@ function connectWebSocket() {
       const { monitor } = data;
       const lastUrlEntered = urlInput.value.trim();
       if (lastUrlEntered && monitor.url.toLowerCase() === lastUrlEntered.toLowerCase()) {
-        const statusText = monitor.status === 'online' ? 'Online' : 'Offline';
+        let statusText;
+        if (monitor.status === 'online') {
+            statusText = 'Online';
+        } else if (monitor.status === 'maintenance') {
+            statusText = 'Maintenance';
+        } else {
+            statusText = 'Offline';
+        }
         const latencyText = monitor.latency !== null ? `${monitor.latency} ms` : 'N/A';
         resultDiv.textContent = `Status for ${monitor.url}: ${statusText} | Latency: ${latencyText}`;
       }
