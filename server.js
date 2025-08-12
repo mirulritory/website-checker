@@ -104,7 +104,7 @@ async function startUserMonitoring(userId) {
                         let reasonText = '';
                         
                         if (newStatus === 'maintenance' && result.error_message) {
-                            reasonText = `Maintenance: ${result.error_message}`;
+                            reasonText = `[Maintenance] ${result.error_message}`;
                         } else if (newStatus === 'offline') {
                             // Use the same reason format as history page
                             if (result.response_code) {
