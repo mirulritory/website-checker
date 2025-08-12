@@ -12,7 +12,7 @@ const fetch = require('node-fetch');
 require('dotenv').config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7734598468:AAFkx57ZH-R16z9QYseXf7eG6OqCqXDZdeg'; 
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN; 
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-1002580218358';   
 
 const app = express();
