@@ -11,7 +11,7 @@
 
 Watch SitePulse in action! See how easy it is to monitor websites and receive instant notifications.
 
-[![SitePulse Demo](https://img.shields.io/badge/📹-Watch%20Demo%20Video-red?style=for-the-badge&logo=youtube)](YOUR_YOUTUBE_LINK_HERE)
+[![SitePulse Demo](https://img.shields.io/badge/📹-Watch%20Demo%20Video-red?style=for-the-badge&logo=youtube)](https://youtu.be/XFMPcapIQA0)
 
 **Demo Highlights:**
 - ✨ User registration and login process
@@ -235,10 +235,6 @@ We welcome contributions! Please feel free to submit a Pull Request. For major c
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 🙏 Acknowledgments
 
 - **Express.js** team for the excellent web framework
@@ -249,12 +245,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 If you have any questions or need help:
-- **Issues**: [GitHub Issues](https://github.com/yourusername/sitepulse/issues)
-- **Documentation**: [Wiki](https://github.com/yourusername/sitepulse/wiki)
-- **Email**: your.email@example.com
+- **Email**: amirulfaris40@gmail.com.com
 
 ---
 
-**Made with ❤️ by [Your Name]**
 
 *SitePulse - Keeping your websites healthy, one check at a time.*
