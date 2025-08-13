@@ -7,6 +7,20 @@
 
 **SitePulse** is a real-time website monitoring application that provides instant notifications about website availability, performance metrics, and status changes. Built with Node.js, Express, and PostgreSQL, it offers a robust solution for businesses and developers to monitor their web assets.
 
+## 🎥 Demo Video
+
+Watch SitePulse in action! See how easy it is to monitor websites and receive instant notifications.
+
+[![SitePulse Demo](https://img.shields.io/badge/📹-Watch%20Demo%20Video-red?style=for-the-badge&logo=youtube)](YOUR_YOUTUBE_LINK_HERE)
+
+**Demo Highlights:**
+- ✨ User registration and login process
+- 🔍 Adding websites to monitor
+- 📊 Real-time dashboard updates
+- 📱 Telegram notification system
+- 📈 Performance metrics tracking
+- 🛠️ Advanced monitoring features
+
 ## ✨ Features
 
 ### 🔍 **Real-time Monitoring**
