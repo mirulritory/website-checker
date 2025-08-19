@@ -13,7 +13,7 @@ require('dotenv').config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN; 
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '-1002580218358';   
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;   
 
 const app = express();
 const server = http.createServer(app);
