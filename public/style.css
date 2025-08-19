@@ -8,35 +8,28 @@ body {
 }
 
 /* Common styles for top-right button containers */
-.auth-buttons,
-#navButtons {
-  position: relative;
-  top: auto;
-  right: auto;
-  text-align: center;
-  margin: 20px 0;
+.auth-buttons, #navButtons {
+  position: absolute;
+  top: 32px;
+  right: 48px;
   z-index: 1000;
 }
 
 /* Common styles for all top-right buttons */
-.auth-buttons button,
-#navButtons button {
+.auth-buttons button, #navButtons button {
   background: #fff;
   color: #00b518;
   border: 2px solid #00b518;
   border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
   font-weight: bold;
   margin-left: 10px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
-  padding: 16px 20px;
-  font-size: 18px;
-  margin: 5px;
-  min-height: 44px;
 }
 
-.auth-buttons button:hover,
-#navButtons button:hover {
+.auth-buttons button:hover, #navButtons button:hover {
   background: #00b518;
   color: #fff;
 }
@@ -53,38 +46,33 @@ body {
 }
 
 /* Common container styles for both pages */
-.center-card,
-.container {
+.center-card, .container {
   background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
-  max-width: 95%;
-  margin: 80px auto 20px auto;
-  padding: 24px 20px 20px 20px;
+  border-radius: 24px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+  max-width: 420px;
+  margin: 100px auto 0 auto;
+  padding: 40px 32px 32px 32px;
   text-align: center;
 }
 
 /* Dashboard specific layout */
 .dashboard-container {
-  flex-direction: column;
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 20px;
-  margin: 80px auto 20px auto;
-  width: 95%;
-  max-width: 95%;
-  min-width: auto;
-  padding: 0 10px;
+  align-items: flex-start;
+  gap: 40px;
+  margin: 100px auto 0 auto;
+  max-width: 1200px;
+  padding: 0 20px;
   width: auto;
-  min-width: 860px;
-  /* Minimum width to accommodate both containers */
+  min-width: 860px; /* Minimum width to accommodate both containers */
 }
 
 .main-container {
   background: #fff;
   border-radius: 24px;
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.18);
   max-width: 420px;
   padding: 40px 32px 32px 32px;
   text-align: center;
@@ -96,7 +84,7 @@ body {
 .top-urls-container {
   background: #fff;
   border-radius: 24px;
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.18);
   max-width: 400px;
   padding: 40px 32px 32px 32px;
   text-align: center;
@@ -136,7 +124,7 @@ body {
 
 .top-url-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .top-url-item .url {
@@ -172,7 +160,7 @@ body {
 }
 
 /* Responsive design for dashboard */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .dashboard-container {
     flex-direction: column;
     align-items: center;
@@ -181,47 +169,45 @@ body {
     width: 100%;
     max-width: 420px;
   }
-
+  
   .main-container,
   .top-urls-container {
     max-width: 100%;
     width: 100%;
-    padding: 24px 20px 20px 20px;
-    margin: 0 auto;
   }
 }
 
 /* Specific override for the monitor page container */
 .container.monitor-container {
-  max-width: 800px;
+    max-width: 800px;
 }
 
 /* Specific override for the history page container */
 body:has(.container.monitor-container) .container.monitor-container {
-  max-width: 1100px;
+    max-width: 1100px;
 }
 
 .main-title {
   color: #16c60c;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: bold;
-  margin-bottom: 15px;
+  margin-bottom: 0.2em;
 }
 
 .subtitle {
   color: #666;
   font-size: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 1.5em;
 }
 
 /* Original full-width input for index.html */
 #urlInput {
   width: 100%;
-  padding: 18px;
+  padding: 16px;
   border-radius: 10px;
   border: 1px solid #ddd;
-  font-size: 18px;
-  margin-bottom: 20px;
+  font-size: 16px;
+  margin-bottom: 1.2em;
   box-sizing: border-box;
   transition: border-color 0.3s ease;
 }
@@ -298,16 +284,15 @@ body:has(.container.monitor-container) .container.monitor-container {
 
 #checkBtn {
   width: 100%;
-  padding: 18px;
+  padding: 16px;
   background: #00b518;
   color: #fff;
   border: none;
   border-radius: 10px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   cursor: pointer;
   transition: background 0.2s;
-  min-height: 44px;
 }
 
 #checkBtn:hover {
@@ -338,15 +323,15 @@ body:has(.container.monitor-container) .container.monitor-container {
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: rgba(0,0,0,0.4);
 }
 
 .modal-content {
   background-color: #fff;
-  margin: 5% auto;
-  padding: 20px 16px;
+  margin: 10% auto;
+  padding: 24px 20px;
   border: 1px solid #888;
-  width: 95%;
+  width: 90%;
   max-width: 350px;
   border-radius: 8px;
   position: relative;
@@ -430,16 +415,14 @@ body:has(.container.monitor-container) .container.monitor-container {
 .monitor-item {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
+  padding: 12px 16px;
   margin-bottom: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   font-size: 16px;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 16px;
 }
 
 .monitor-header {
@@ -453,15 +436,13 @@ body:has(.container.monitor-container) .container.monitor-container {
   flex: 1;
   color: #333;
   word-break: break-all;
-  width: 100%;
-  padding-right: 0;
-  margin-bottom: 8px;
+  padding-right: 16px;
 }
 
 .monitor-status,
 .monitor-latency {
-  width: auto;
-  text-align: left;
+  width: 120px;
+  text-align: center;
   color: #555;
   white-space: nowrap;
 }
@@ -488,46 +469,45 @@ body:has(.container.monitor-container) .container.monitor-container {
 }
 
 /* Add specific container style for monitor and history pages */
-.monitors-list,
-.history-list {
-  width: 95%;
+.monitors-list, .history-list {
+  width: 90%;
   max-width: 1200px;
-  margin: 15px auto;
+  margin: 20px auto;
 }
 
 .chart-container {
-  margin-top: 30px;
+    margin-top: 30px;
 }
 
 /* Style for the dropdown on the history page */
 .chart-options {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
 #timePeriod {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 16px;
-  background-color: white;
-  cursor: pointer;
-  color: #333;
-  min-width: 150px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 16px;
+    background-color: white;
+    cursor: pointer;
+    color: #333;
+    min-width: 150px;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 #timePeriod:hover {
-  border-color: #aaa;
+    border-color: #aaa;
 }
 
 #timePeriod:focus {
-  outline: none;
-  border-color: #00b518;
-  box-shadow: 0 0 0 3px rgba(0, 181, 24, 0.2);
+    outline: none;
+    border-color: #00b518;
+    box-shadow: 0 0 0 3px rgba(0, 181, 24, 0.2);
 }
 
 /* Server status indicator */
@@ -567,7 +547,7 @@ body:has(.container.monitor-container) .container.monitor-container {
   color: white;
   padding: 12px 20px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   z-index: 10000;
   animation: slideIn 0.3s ease-out;
 }
@@ -577,40 +557,37 @@ body:has(.container.monitor-container) .container.monitor-container {
     transform: translateX(100%);
     opacity: 0;
   }
-
   to {
     transform: translateX(0);
     opacity: 1;
   }
-}
+} 
 
 .log-table-scroll {
   max-height: 600px;
   overflow-y: auto;
   margin-bottom: 8px;
-}
+} 
 
 .website-list-scroll {
   max-height: 220px;
   overflow-y: auto;
   margin-bottom: 8px;
-}
+} 
 
 /* Dashboard layout - positions top URLs card to the right of center-card */
 .top-urls-card {
   position: absolute;
   top: 100px;
-  left: calc(50% + 210px + 15px);
+  left: calc(50% + 210px + 15px); /* Center (50%) + half of center-card width (210px) + smaller gap (15px) */
   background: #fff;
   border-radius: 24px;
-  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 32px rgba(0,0,0,0.18);
+  max-width: 300px;
+  padding: 25px 20px 20px 20px;
   text-align: center;
   flex-shrink: 0;
   margin-top: 0;
-  max-width: 100%;
-  width: 100%;
-  padding: 24px 20px 20px 20px;
-  margin: 0 auto;
 }
 
 .top-urls-list {
@@ -646,7 +623,7 @@ body:has(.container.monitor-container) .container.monitor-container {
 
 .top-url-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .top-url-item .url {
@@ -682,56 +659,11 @@ body:has(.container.monitor-container) .container.monitor-container {
 }
 
 /* Responsive design for dashboard layout */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .top-urls-card {
     position: static;
     margin: 20px auto 0 auto;
     max-width: 300px;
     width: 100%;
   }
-}
-
-/* Small mobile devices */
-@media (max-width: 480px) {
-  .center-card, .container {
-    margin: 60px auto 15px auto;
-    padding: 20px 16px 16px 16px;
-  }
-
-  .dashboard-container {
-    margin: 60px auto 15px auto;
-    padding: 0 8px;
-  }
-
-  .main-title {
-    font-size: 24px;
-  }
-
-  .auth-buttons button, #navButtons button {
-    padding: 14px 16px;
-    font-size: 16px;
-    margin: 3px;
-  }
-
-  #urlInput {
-    padding: 16px;
-    font-size: 16px;
-  }
-
-  #checkBtn {
-    padding: 16px;
-    font-size: 16px;
-  }
-}
-
-/* Landscape mobile optimization */
-@media (max-width: 768px) and (orientation: landscape) {
-  .center-card, .container {
-    margin: 40px auto 15px auto;
-  }
-
-  .dashboard-container {
-    margin: 40px auto 15px auto;
-  }
-}
-
+} 
